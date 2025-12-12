@@ -1,21 +1,18 @@
 /* =========================
-   TANGMO SCRIPT (TTS FIX)
+   TANGMO SCRIPT (CLEAN)
    ========================= */
-
-const API_BASE = ""; // ใช้ลิงก์เดียวกับเว็บ (vercel)
-
-let isListening = false;
-let recognition;
-let audioPlayer = null;
-let memory = JSON.parse(sessionStorage.getItem("tangmo_memory") || "[]");
-const skip = document.getElementById("skipIntro");
-if (skip) skip.addEventListener("click", () => {
-  const intro = document.getElementById("intro");
-  if (intro) intro.style.display = "none";
-});
 
 const micBtn = document.getElementById("tangmo-mic");
 const statusEl = document.getElementById("tangmo-status");
+
+let recognition;
+let isListening = false;
+let memory = JSON.parse(sessionStorage.getItem("tangmo_memory") || "[]");
+
+function setMic(state, text) {
+  micBtn.className = `mic ${state}`;
+  statusEl.textContent = text;
+}
 
 function saveMemory(role, content) {
   memory.push({ role, content });
@@ -23,57 +20,44 @@ function saveMemory(role, content) {
   sessionStorage.setItem("tangmo_memory", JSON.stringify(memory));
 }
 
-function setStatus(text, mode) {
-  statusEl.textContent = text;
-  micBtn.setAttribute("data-state", mode);
-}
-
 async function speak(text) {
-  try {
-    setStatus("Tangmo กำลังพูด…", "speaking");
+  setMic("speaking", "Tangmo กำลังพูด…");
 
-    const res = await fetch(`${API_BASE}/api/tts`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
-    });
+  const res = await fetch("/api/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
 
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
+  const blob = await res.blob();
+  const audio = new Audio(URL.createObjectURL(blob));
 
-    audioPlayer = new Audio(url);
-    audioPlayer.onended = () => {
-      setStatus("แตะไมค์เพื่อคุยกับ Tangmo", "idle");
-    };
-    audioPlayer.play();
-  } catch (e) {
-    setStatus("เกิดปัญหาเรื่องเสียง", "idle");
-  }
+  audio.onended = () => {
+    setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
+  };
+
+  audio.play();
 }
 
-async function sendToTangmo(text) {
-  try {
-    setStatus("Tangmo กำลังคิด…", "thinking");
+async function askTangmo(text) {
+  setMic("thinking", "Tangmo กำลังคิด…");
 
-    const res = await fetch(`${API_BASE}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: text,
-        history: memory
-      })
-    });
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: text,
+      history: memory
+    })
+  });
 
-    const data = await res.json();
-    const reply = data.reply || "ขอโทษนะคะ ตอนนี้ตอบไม่ได้";
+  const data = await res.json();
+  const reply = data.reply || "ขอโทษนะคะ ตอนนี้ตอบไม่ได้";
 
-    saveMemory("user", text);
-    saveMemory("assistant", reply);
+  saveMemory("user", text);
+  saveMemory("assistant", reply);
 
-    await speak(reply);
-  } catch (e) {
-    setStatus("ระบบมีปัญหา ลองใหม่อีกทีนะคะ", "idle");
-  }
+  speak(reply);
 }
 
 function initSpeech() {
@@ -85,18 +69,17 @@ function initSpeech() {
   recognition.continuous = false;
 
   recognition.onstart = () => {
-    setStatus("Tangmo กำลังฟัง…", "listening");
+    setMic("listening", "Tangmo กำลังฟัง…");
   };
 
   recognition.onresult = (e) => {
-    const text = e.results[0][0].transcript;
     isListening = false;
-    sendToTangmo(text);
+    askTangmo(e.results[0][0].transcript);
   };
 
   recognition.onerror = () => {
-    setStatus("ฟังไม่ชัด ลองใหม่อีกทีนะคะ", "idle");
     isListening = false;
+    setMic("idle", "ฟังไม่ชัด ลองใหม่อีกทีนะคะ");
   };
 }
 
@@ -107,33 +90,10 @@ micBtn.addEventListener("click", () => {
     isListening = true;
     recognition.start();
   } else {
-    recognition.stop();
     isListening = false;
-    setStatus("แตะไมค์เพื่อคุยกับ Tangmo", "idle");
+    recognition.stop();
+    setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
   }
 });
 
-setStatus("แตะไมค์เพื่อคุยกับ Tangmo", "idle");
-
-document.addEventListener("DOMContentLoaded", () => {
-  const intro = document.getElementById("intro"); // div ครอบ intro ทั้งก้อน (ถ้ามี)
-  const v = document.getElementById("introVideo");
-
-  function hideIntro() {
-    if (intro) intro.style.display = "none";
-    if (v) {
-      try { v.pause(); } catch {}
-    }
-  }
-
-  // กันค้าง: ไม่ว่าวิดีโอเล่น/ไม่เล่น ให้หายภายใน 2.5 วิ
-  setTimeout(hideIntro, 2500);
-
-  // ถ้าวิดีโอจบ/โหลดพัง ก็ให้หาย
-  if (v) {
-    v.addEventListener("ended", hideIntro);
-    v.addEventListener("error", hideIntro);
-    v.addEventListener("stalled", hideIntro);
-  }
-});
-
+setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
