@@ -109,3 +109,26 @@ micBtn.addEventListener("click", () => {
 });
 
 setStatus("แตะไมค์เพื่อคุยกับ Tangmo", "idle");
+
+document.addEventListener("DOMContentLoaded", () => {
+  const intro = document.getElementById("intro"); // div ครอบ intro ทั้งก้อน (ถ้ามี)
+  const v = document.getElementById("introVideo");
+
+  function hideIntro() {
+    if (intro) intro.style.display = "none";
+    if (v) {
+      try { v.pause(); } catch {}
+    }
+  }
+
+  // กันค้าง: ไม่ว่าวิดีโอเล่น/ไม่เล่น ให้หายภายใน 2.5 วิ
+  setTimeout(hideIntro, 2500);
+
+  // ถ้าวิดีโอจบ/โหลดพัง ก็ให้หาย
+  if (v) {
+    v.addEventListener("ended", hideIntro);
+    v.addEventListener("error", hideIntro);
+    v.addEventListener("stalled", hideIntro);
+  }
+});
+
