@@ -42,38 +42,45 @@
       </nav>
     </header>
 
-    <!-- AI DOCK (FIXED) -->
+    <!-- AI (MINIMAL, CLEAN) -->
+    <!--
+      Default: show ONLY big mic + "Tangmo / ผู้ช่วยหน้าร้าน" (fixed, does not scroll)
+      Gesture:
+      - Tap mic = Start listening
+      - Tap again = Stop listening
+      - Swipe mic UP = show chat display
+      - Swipe mic DOWN = show input tray (type + upload)
+    -->
     <section id="ai-dock" class="ai-dock" aria-label="ผู้ช่วย Tangmo">
-      <div class="ai-dock-head">
-        <div class="ai-dock-title">
-          <div class="ai-name">Tangmo</div>
-          <div class="ai-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
-        </div>
-        <button id="ai-close" class="ai-close" type="button" aria-label="ปิดผู้ช่วย">✕</button>
-      </div>
+      <button id="ai-close" class="ai-close" type="button" aria-label="ปิดผู้ช่วย">✕</button>
 
-      <div id="ai-messages" class="ai-messages" role="log" aria-live="polite">
-        <!-- First message injected by JS (randomized opening) -->
-      </div>
-
-      <div class="ai-actions">
-        <button id="ai-mic" class="ai-mic" type="button" aria-label="กดเพื่อพูด">
-          <img src="assets/mic.png" alt="ไมค์" />
+      <div class="ai-core">
+        <button id="ai-mic" class="ai-mic" type="button" aria-label="แตะเพื่อพูด (แตะอีกครั้งเพื่อหยุด)">
+          <img src="assets/logo-only.png" alt="ไมค์" />
         </button>
+        <div class="ai-title">Tangmo</div>
+        <div class="ai-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
+      </div>
 
+      <!-- Chat display (hidden by default; swipe UP on mic to show) -->
+      <div id="ai-chat" class="ai-chat is-hidden" aria-hidden="true">
+        <div id="ai-messages" class="ai-messages" role="log" aria-live="polite"></div>
+        <div class="ai-hint">
+          ถ้าต้องการนัดหมาย/คุยรายละเอียด: โทร “เบอร์ด้านล่าง” หรือแอด LINE ของร้านได้เลยนะคะ
+        </div>
+      </div>
+
+      <!-- Input tray (hidden by default; swipe DOWN on mic to show) -->
+      <div id="ai-tray" class="ai-tray is-hidden" aria-hidden="true">
         <label class="ai-upload" aria-label="ส่งรูปหน้างาน">
           🖼️ ส่งรูป
           <input id="ai-file" type="file" accept="image/*" />
         </label>
 
         <form id="ai-form" class="ai-form" autocomplete="off">
-          <input id="ai-text" type="text" placeholder="พิมพ์ถาม Tangmo (หรือกดไมค์พูด)" />
+          <input id="ai-text" type="text" placeholder="พิมพ์ถาม Tangmo" />
           <button id="ai-send" type="submit">ส่ง</button>
         </form>
-      </div>
-
-      <div class="ai-hint">
-        ถ้าต้องการนัดหมาย/คุยรายละเอียด: โทร “เบอร์ด้านล่าง” หรือแอด LINE ของร้านได้เลยนะคะ
       </div>
     </section>
 

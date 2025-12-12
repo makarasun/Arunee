@@ -528,46 +528,88 @@ body.is-intro-playing {
   .top-nav.is-collapsed{ display:flex; }
 }
 
-/* AI Dock fixed area (replaces old search/select) */
+/* Tangmo v1 - Minimal Mic UI (clean home) */
 .ai-dock{
   position: fixed;
-  left: 10px;
-  right: 10px;
-  top: 76px; /* below top bar */
+  left: 0;
+  right: 0;
+  top: 0;
   z-index: 999;
+  pointer-events: none; /* only allow clicks on inner controls */
+}
+.ai-dock.is-hidden{ display:none; }
+
+.ai-close{
+  position: absolute;
+  right: 12px;
+  top: 78px; /* below top bar */
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 34px rgba(0,0,0,0.12);
+  cursor: pointer;
+  pointer-events: auto;
+}
+.ai-close:active{ transform: scale(0.98); }
+
+.ai-core{
+  position: absolute;
+  left: 50%;
+  top: 110px; /* center-top zone */
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: auto;
+}
+
+.ai-mic{
+  width: 92px;
+  height: 92px;
+  border-radius: 28px;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, #ff5a7a, #ff1f4e);
+  box-shadow: 0 18px 46px rgba(255, 54, 97, 0.32);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ai-mic:active{ transform: scale(0.98); }
+.ai-mic img{ width: 54px; height: 54px; object-fit: contain; border-radius: 14px; }
+
+/* Mic status glow */
+.ai-mic.is-listening{ filter: brightness(1.12); box-shadow: 0 0 0 10px rgba(255,31,78,0.18), 0 18px 46px rgba(255, 54, 97, 0.35); }
+.ai-mic.is-thinking{ filter: brightness(1.10); box-shadow: 0 0 0 10px rgba(2,6,23,0.10), 0 18px 46px rgba(0, 0, 0, 0.18); }
+.ai-mic.is-speaking{ filter: brightness(1.16); box-shadow: 0 0 0 10px rgba(34,197,94,0.18), 0 18px 46px rgba(255, 54, 97, 0.25); }
+
+.ai-title{ margin-top: 10px; font-weight: 900; }
+.ai-sub{ font-size: 12px; opacity: 0.75; margin-top: 2px; }
+
+/* Chat display (swipe UP to show) */
+.ai-chat{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 220px;
   border-radius: 18px;
   background: rgba(255,255,255,0.94);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.16);
   overflow: hidden;
+  pointer-events: auto;
 }
 
-.ai-dock.is-hidden{ display:none; }
-
-.ai-dock-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
-
-.ai-name{ font-weight: 800; }
-.ai-sub{ font-size: 11px; opacity: 0.7; margin-top: 2px; }
-
-.ai-close{
-  border:none;
-  background: transparent;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 10px;
-}
-.ai-close:active{ background: rgba(0,0,0,0.06); }
+.ai-chat.is-hidden{ display:none; }
 
 .ai-messages{
-  max-height: 118px;
+  max-height: 160px;
   overflow:auto;
   padding: 10px 12px;
   display:flex;
@@ -583,43 +625,28 @@ body.is-intro-playing {
   max-width: 92%;
 }
 
-.ai-msg.bot{
-  align-self:flex-start;
-  background: rgba(2,6,23,0.06);
-}
-.ai-msg.user{
-  align-self:flex-end;
-  background: rgba(255,31,78,0.14);
-  border: 1px solid rgba(255,31,78,0.18);
-}
+.ai-msg.bot{ align-self:flex-start; background: rgba(2,6,23,0.06); }
+.ai-msg.user{ align-self:flex-end; background: rgba(255,31,78,0.14); border: 1px solid rgba(255,31,78,0.18); }
 
-.ai-actions{
+.ai-hint{ padding: 8px 12px 10px; font-size: 11px; opacity: 0.75; border-top: 1px dashed rgba(0,0,0,0.10); }
+
+/* Input tray (swipe DOWN to show) */
+.ai-tray{
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 220px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.16);
+  overflow: hidden;
+  pointer-events: auto;
   padding: 10px 12px 12px;
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  flex-wrap: wrap;
-  border-top: 1px solid rgba(0,0,0,0.06);
 }
 
-.ai-mic{
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  border: none;
-  cursor: pointer;
-  background: transparent;
-  box-shadow: 0 14px 34px rgba(255, 54, 98, 0);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.ai-mic img{
-  width: 150px;
-  height: 150px;
-  object-fit: contain;
-  border-radius: 150px;
-}
+.ai-tray.is-hidden{ display:none; }
 
 .ai-upload{
   border-radius: 999px;
@@ -630,25 +657,19 @@ body.is-intro-playing {
   display:inline-flex;
   align-items:center;
   gap: 8px;
+  margin-bottom: 10px;
 }
 .ai-upload input{ display:none; }
 
-.ai-form{
-  flex: 1;
-  display:flex;
-  gap: 10px;
-  min-width: 220px;
-}
-
+.ai-form{ display:flex; gap: 10px; }
 .ai-form input{
   flex:1;
   border-radius: 999px;
   border: 1px solid rgba(0,0,0,0.10);
   padding: 10px 12px;
-  outline: none;
+  outline:none;
   background: rgba(255,255,255,0.90);
 }
-
 .ai-form button{
   border:none;
   border-radius: 999px;
@@ -657,16 +678,12 @@ body.is-intro-playing {
   background: rgba(2,6,23,0.08);
 }
 
-.ai-hint{
-  padding: 8px 12px 10px;
-  font-size: 11px;
-  opacity: 0.75;
-  border-top: 1px dashed rgba(0,0,0,0.10);
-}
+/* Keep page clean: only reserve space for mic area */
+main{ padding-top: 360px; }
 
-/* Push page content down so it doesn't hide behind fixed AI dock */
-main{ padding-top: 210px; }
 @media (min-width: 900px){
-  .ai-dock{ left: 14px; right: 14px; top: 84px; }
-  main{ padding-top: 230px; }
+  .ai-core{ top: 120px; }
+  .ai-close{ top: 86px; }
+  .ai-chat, .ai-tray{ left: 14px; right: 14px; top: 240px; }
+  main{ padding-top: 390px; }
 }

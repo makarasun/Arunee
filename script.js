@@ -718,6 +718,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ---- Tangmo AI Dock ----
   const dock = document.getElementById("ai-dock");
   const closeBtn = document.getElementById("ai-close");
+  const chatPanel = document.getElementById("ai-chat");
+  const trayPanel = document.getElementById("ai-tray");
   const msgBox = document.getElementById("ai-messages");
   const micBtn = document.getElementById("ai-mic");
   const fileInput = document.getElementById("ai-file");
@@ -729,6 +731,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const STORAGE_KEY = "tangmo_v1_history";
   const OPENED_KEY = "tangmo_v1_opened";
   const MAX_TURNS = 12; // short-term memory
+
+  // If your website is on GitHub Pages but your AI runs on Vercel,
+  // put your Vercel URL here, e.g. "https://your-project.vercel.app"
+  // Leave empty "" if the site itself is hosted on Vercel.
+  const TANGMO_API_BASE = "";
+
+  function apiUrl(path) {
+    if (TANGMO_API_BASE && /^https?:\/\//.test(TANGMO_API_BASE)) {
+      return TANGMO_API_BASE.replace(/\/$/, "") + path;
+    }
+    return path;
+  }
+
+  // Mic visual state
+  function setMicState(state) {
+    if (!micBtn) return;
+    micBtn.classList.remove("is-listening", "is-thinking", "is-speaking");
+    if (state === "listening") micBtn.classList.add("is-listening");
+    if (state === "thinking") micBtn.classList.add("is-thinking");
+    if (state === "speaking") micBtn.classList.add("is-speaking");
+  }
+
+  function showChat() {
+    chatPanel?.classList.remove("is-hidden");
+    trayPanel?.classList.add("is-hidden");
+    chatPanel?.setAttribute("aria-hidden", "false");
+    trayPanel?.setAttribute("aria-hidden", "true");
+  }
+
+  function showTray() {
+    trayPanel?.classList.remove("is-hidden");
+    chatPanel?.classList.add("is-hidden");
+    trayPanel?.setAttribute("aria-hidden", "false");
+    chatPanel?.setAttribute("aria-hidden", "true");
+  }
+
+  function hidePanels() {
+    chatPanel?.classList.add("is-hidden");
+    trayPanel?.classList.add("is-hidden");
+    chatPanel?.setAttribute("aria-hidden", "true");
+    trayPanel?.setAttribute("aria-hidden", "true");
+  }
+
+  // start clean
+  hidePanels();
 
   // Basic PII scrubbing (keep it gentle)
   function scrubPII(s) {
@@ -800,6 +847,45 @@ document.addEventListener("DOMContentLoaded", () => {
     dock.classList.add("is-hidden");
   });
 
+  // Swipe gestures on mic:
+  // - Swipe UP  => show chat display
+  // - Swipe DOWN => show input tray
+  // - Small move => do nothing (tap still works)
+  (function setupMicSwipe() {
+    if (!micBtn) return;
+    let startY = 0;
+    let moved = false;
+    const THRESH = 40;
+
+    micBtn.addEventListener("touchstart", (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+      startY = t.clientY;
+      moved = false;
+    }, { passive: true });
+
+    micBtn.addEventListener("touchmove", (e) => {
+      const t = e.touches && e.touches[0];
+      if (!t) return;
+      const dy = t.clientY - startY;
+      if (Math.abs(dy) > 10) moved = true;
+    }, { passive: true });
+
+    micBtn.addEventListener("touchend", (e) => {
+      // If user swiped enough, toggle panels
+      const changed = e.changedTouches && e.changedTouches[0];
+      if (!changed) return;
+      const dy = changed.clientY - startY;
+      if (!moved) return; // treat as tap, click handler will run
+
+      if (dy <= -THRESH) {
+        showChat();
+      } else if (dy >= THRESH) {
+        showTray();
+      }
+    });
+  })();
+
   // Convert file to data URL
   async function fileToDataURL(file) {
     return new Promise((resolve, reject) => {
@@ -814,7 +900,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function callChatAPI({ text, imageDataUrl }) {
     const history = loadHistory().map(({ role, text }) => ({ role, content: text })).slice(-MAX_TURNS);
 
-    const res = await fetch("/api/chat", {
+    const res = await fetch(apiUrl("/api/chat"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -824,13 +910,19 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     });
 
-    if (!res.ok) throw new Error(`Chat API error ${res.status}`);
+    if (!res.ok) {
+      // Noob hint: 404 usually means you are on GitHub Pages (no backend)
+      const hint = res.status === 404
+        ? "(404) ไม่เจอระบบหลังบ้าน: ถ้าคุณเปิดจาก GitHub Pages ให้เปิดลิงก์ Vercel แทน หรือใส่ TANGMO_API_BASE ใน script.js"
+        : `(${res.status})`;
+      throw new Error(`Chat API error ${hint}`);
+    }
     return res.json(); // { reply: "..." }
   }
 
   // OpenAI TTS via backend: returns audio/mpeg
   async function speakWithOpenAITTS(text) {
-    const res = await fetch("/api/tts", {
+    const res = await fetch(apiUrl("/api/tts"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text })
@@ -840,8 +932,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
-    audio.onended = () => URL.revokeObjectURL(url);
-    await audio.play();
+
+    setMicState("speaking");
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      setMicState(null);
+    };
+
+    // On some mobile browsers, autoplay can be blocked.
+    // If play() fails, we just stop glowing and keep text response.
+    try {
+      await audio.play();
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      setMicState(null);
+    }
   }
 
   // Send text message
@@ -853,6 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pushHistory("user", clean);
 
     addMsg("กำลังคิดให้นะคะ…", "bot");
+    setMicState("thinking");
     const thinkingEl = msgBox.lastChild;
 
     try {
@@ -863,11 +969,14 @@ document.addEventListener("DOMContentLoaded", () => {
       addMsg(reply, "bot");
       pushHistory("assistant", reply);
 
+      setMicState(null);
+
       // speak reply (best-effort)
-      speakWithOpenAITTS(reply).catch(() => {});
+      speakWithOpenAITTS(reply).catch(() => { setMicState(null); });
     } catch (err) {
       thinkingEl?.remove();
       addMsg("ขอโทษนะคะ ตอนนี้ระบบตอบแชทมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ", "bot");
+      setMicState(null);
       console.error(err);
     }
   }
@@ -940,10 +1049,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isListening) {
       try { recog.stop(); } catch {}
       isListening = false;
+      setMicState(null);
       return;
     }
 
     isListening = true;
+    setMicState("listening");
     addMsg("กำลังฟังอยู่นะคะ…", "bot");
     const listeningEl = msgBox.lastChild;
 
@@ -951,23 +1062,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const text = ev.results?.[0]?.[0]?.transcript || "";
       listeningEl?.remove();
       isListening = false;
+      setMicState(null);
       if (text.trim()) sendText(text);
     };
 
     recog.onerror = () => {
       listeningEl?.remove();
       isListening = false;
+      setMicState(null);
       addMsg("ขอโทษนะคะ ฟังไม่ชัด ลองใหม่อีกที หรือพิมพ์แทนได้เลยค่ะ", "bot");
     };
 
-    recog.onend = () => { isListening = false; };
+    recog.onend = () => { isListening = false; setMicState(null); };
 
     try { recog.start(); } catch (e) {
       listeningEl?.remove();
       isListening = false;
+      setMicState(null);
     }
   });
 
-  // Kick off opening
+  // Start clean: hide chat + tray by default
+  hidePanels();
+
+  // Kick off opening (and show chat only when user swipes up)
   maybeOpening();
 })();
