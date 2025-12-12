@@ -8,6 +8,11 @@ let isListening = false;
 let recognition;
 let audioPlayer = null;
 let memory = JSON.parse(sessionStorage.getItem("tangmo_memory") || "[]");
+const skip = document.getElementById("skipIntro");
+if (skip) skip.addEventListener("click", () => {
+  const intro = document.getElementById("intro");
+  if (intro) intro.style.display = "none";
+});
 
 const micBtn = document.getElementById("tangmo-mic");
 const statusEl = document.getElementById("tangmo-status");
