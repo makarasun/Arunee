@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <title>อรุณี ผ้าม่าน – บริการตกแต่งภายในครบวงจร</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="is-intro-playing">
+    <!-- INTRO VIDEO OVERLAY -->
+    <div id="intro-overlay" class="intro-overlay">
+      <video
+        id="intro-video"
+        class="intro-video"
+        playsinline
+        webkit-playsinline
+        preload="auto"
+      >
+        <source src="logo-intro.mp4" type="video/mp4" />
+      </video>
+      <button id="intro-skip" class="intro-skip">ข้าม</button>
+    </div>
+
+    <!-- TOP BAR -->
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="brand-text">
+          <div class="brand-title">อรุณี บริการ</div>
+          <div class="brand-subtitle">บริการตกแต่งภายในครบวงจร</div>
+        </div>
+      </div>
+
+      <button id="nav-toggle" class="nav-toggle" type="button" aria-label="เมนู">☰</button>
+
+      <nav id="top-nav" class="top-nav is-collapsed" aria-label="เมนูหลัก">
+        <button class="nav-link" type="button" data-scroll="#services">บริการของเรา</button>
+        <button class="nav-link" type="button" data-scroll="#contact">ติดต่อเรา</button>
+        <button class="nav-link" type="button" data-scroll="#map">แผนที่ร้าน</button>
+      </nav>
+    </header>
+
+    <!-- AI DOCK (FIXED) -->
+    <section id="ai-dock" class="ai-dock" aria-label="ผู้ช่วย Tangmo">
+      <div class="ai-dock-head">
+        <div class="ai-dock-title">
+          <div class="ai-name">Tangmo</div>
+          <div class="ai-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
+        </div>
+        <button id="ai-close" class="ai-close" type="button" aria-label="ปิดผู้ช่วย">✕</button>
+      </div>
+
+      <div id="ai-messages" class="ai-messages" role="log" aria-live="polite">
+        <!-- First message injected by JS (randomized opening) -->
+      </div>
+
+      <div class="ai-actions">
+        <button id="ai-mic" class="ai-mic" type="button" aria-label="กดเพื่อพูด">
+          <img src="assets/mic.png" alt="ไมค์" />
+        </button>
+
+        <label class="ai-upload" aria-label="ส่งรูปหน้างาน">
+          🖼️ ส่งรูป
+          <input id="ai-file" type="file" accept="image/*" />
+        </label>
+
+        <form id="ai-form" class="ai-form" autocomplete="off">
+          <input id="ai-text" type="text" placeholder="พิมพ์ถาม Tangmo (หรือกดไมค์พูด)" />
+          <button id="ai-send" type="submit">ส่ง</button>
+        </form>
+      </div>
+
+      <div class="ai-hint">
+        ถ้าต้องการนัดหมาย/คุยรายละเอียด: โทร “เบอร์ด้านล่าง” หรือแอด LINE ของร้านได้เลยนะคะ
+      </div>
+    </section>
+
+
+    <!-- SERVICES SECTION (CAROUSEL + VIEWER) -->
+    <main>
+      <section class="section" id="services">
+        <div class="card-panel services-panel">
+          <!-- LEFT: GLASS CAROUSEL -->
+          <div class="services-left">
+            <h2 class="services-title">บริการตกแต่งภายในครบวงจร</h2>
+            <p class="services-lead">
+              เลือกหมวดงานที่สนใจได้โดยปัดการ์ดประเภทบริการ แล้วแตะเพื่อดูตัวอย่างผลงานจริงด้านล่าง
+            </p>
+
+            <div class="carousel-shell">
+              <canvas id="glass-carousel"></canvas>
+            </div>
+          </div>
+
+          <!-- RIGHT: MEDIA VIEWER -->
+          <div class="services-right">
+            <article class="viewer-panel">
+              <header class="viewer-header">
+                <span class="viewer-pill" id="viewer-tag">งานออกแบบ</span>
+                <h2 id="viewer-title">Interior Design ผ้าม่าน พื้น</h2>
+                <p id="viewer-desc">
+                  เลือกผ้าม่าน วอลเปเปอร์ มู่ลี่ งานผนัง งานพื้น
+                  และบริการติดตั้งครบชุด ในสไตล์ที่เข้ากับห้องของคุณ
+                </p>
+              </header>
+
+              <section class="viewer-media" id="viewer-media">
+                <div
+                  class="viewer-media-placeholder"
+                  id="viewer-placeholder"
+                >
+                  ยังไม่มีรูปตัวอย่างในหมวดนี้
+                </div>
+
+                <div class="viewer-thumbs" id="viewer-thumbs"></div>
+
+                <button
+                  class="viewer-fullscreen-btn"
+                  type="button"
+                  id="viewer-fullscreen-btn"
+                >
+                  ⛶ เต็มจอ
+                </button>
+              </section>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTACT SECTION -->
+      <section class="section" id="contact">
+        <div class="card-panel contact-panel">
+          <h2>ติดต่อเรา</h2>
+          <p>
+            โทรศัพท์ / ไลน์ / นัดหมายช่างเข้าไปวัดหน้างาน
+            สามารถปรับเปลี่ยนดีไซน์ร่วมกันได้หน้างานจริง
+          </p>
+
+          <div class="contact-grid">
+            <div>
+              <h3>โทร / ไลน์</h3>
+              <p>089-XXX-XXXX<br />LINE: @aruneecurtain</p>
+            </div>
+            <div>
+              <h3>ที่อยู่โชว์รูม</h3>
+              <p>อ.เชียงคำ จ.พะเยา และพื้นที่บริการภาคเหนือตอนบน</p>
+            </div>
+            <div>
+              <h3>เวลาเปิด–ปิด</h3>
+              <p>ทุกวัน 09:00 – 18:00 น.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- MAP SECTION -->
+      <section class="section" id="map">
+        <div class="card-panel map-panel">
+          <h2>แผนที่ร้าน</h2>
+          <div class="map-placeholder">
+            ฝัง Google Map ภายหลังได้ตรงนี้
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- THREE.JS + APP SCRIPT -->
+    <!-- ใช้ jsDelivr แทน unpkg เพื่อลดปัญหาโหลดไม่ขึ้น -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
