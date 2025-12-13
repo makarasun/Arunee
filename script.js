@@ -1,15 +1,168 @@
 // =========================
-// Tangmo UX (mic-first + optional drawer)
+// Utils
 // =========================
-const micBtn = document.getElementById("tangmo-mic");
-const statusEl = document.getElementById("tangmo-status");
-const drawer = document.getElementById("tangmo-drawer");
-const handle = document.getElementById("drawer-handle");
-const textInput = document.getElementById("tangmo-text");
-const sendBtn = document.getElementById("tangmo-send");
-const clearBtn = document.getElementById("tangmo-clear");
-const imgInput = document.getElementById("tangmo-image");
-const chatEl = document.getElementById("tangmo-chat");
+const $ = (q) => document.querySelector(q);
+const $$ = (q) => Array.from(document.querySelectorAll(q));
+
+function withTimeout(promise, ms = 12000) {
+  return new Promise((resolve, reject) => {
+    const id = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then((v) => { clearTimeout(id); resolve(v); })
+           .catch((e) => { clearTimeout(id); reject(e); });
+  });
+}
+
+// =========================
+// Topbar auto-hide
+// =========================
+const topbar = $("#topbar");
+let lastY = window.scrollY;
+window.addEventListener("scroll", () => {
+  if (!topbar) return;
+  const y = window.scrollY;
+  const goingDown = y > lastY;
+  if (goingDown && y > 30) topbar.classList.add("is-hidden");
+  else topbar.classList.remove("is-hidden");
+  lastY = y;
+});
+
+// =========================
+// Reveal on scroll (free scroll + reveal)
+// =========================
+const revealEls = $$(".reveal");
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if (e.isIntersecting) e.target.classList.add("is-in");
+  });
+}, { threshold: 0.12 });
+
+revealEls.forEach((el) => io.observe(el));
+
+// =========================
+// Stage BG swap (blur/outfocus vertical images)
+// =========================
+function setStageBg(bgName) {
+  const imgs = $$(".stageBg__img");
+  imgs.forEach((el) => {
+    const isMatch = el.dataset.bg === bgName;
+    el.classList.toggle("is-active", isMatch);
+  });
+  // fallback ถ้าไม่มีชื่อ
+  const anyActive = imgs.some((el) => el.classList.contains("is-active"));
+  if (!anyActive) {
+    const def = imgs.find((x) => x.dataset.bg === "bg-default");
+    def?.classList.add("is-active");
+  }
+}
+setStageBg("bg-default");
+
+// =========================
+// Carousel 3D Ring (free drag rotate)
+// =========================
+const ring = $("#ring");
+const cards = $$(".card3d");
+
+let angle = 0;          // current rotation
+let velocity = 0;       // inertia
+let isDown = false;
+let lastX = 0;
+
+function layoutRing() {
+  if (!ring || cards.length === 0) return;
+  const n = cards.length;
+  const step = 360 / n;
+  const radius = 320; // depth
+  cards.forEach((card, i) => {
+    const a = step * i;
+    // Each card stands facing out
+    card.style.transform = `rotateY(${a}deg) translateZ(${radius}px)`;
+  });
+}
+layoutRing();
+
+function setRingRotation(a) {
+  if (!ring) return;
+  ring.style.transform = `rotateY(${a}deg)`;
+}
+
+function animateRing() {
+  // inertia decay
+  angle += velocity;
+  velocity *= 0.92;
+  if (Math.abs(velocity) < 0.0008) velocity = 0;
+
+  setRingRotation(angle);
+  requestAnimationFrame(animateRing);
+}
+animateRing();
+
+function pointerDown(x) {
+  isDown = true;
+  lastX = x;
+}
+function pointerMove(x) {
+  if (!isDown) return;
+  const dx = x - lastX;
+  lastX = x;
+
+  // sensitivity
+  const delta = dx * 0.22;
+  angle += delta;
+  velocity = delta; // keep inertia
+}
+function pointerUp() {
+  isDown = false;
+}
+
+if (ring) {
+  // mouse
+  ring.addEventListener("mousedown", (e) => pointerDown(e.clientX));
+  window.addEventListener("mousemove", (e) => pointerMove(e.clientX));
+  window.addEventListener("mouseup", pointerUp);
+
+  // touch
+  ring.addEventListener("touchstart", (e) => pointerDown(e.touches[0].clientX), { passive: true });
+  ring.addEventListener("touchmove", (e) => pointerMove(e.touches[0].clientX), { passive: true });
+  ring.addEventListener("touchend", pointerUp);
+}
+
+// Select card -> scroll to section + set BG
+function setActiveCard(card) {
+  cards.forEach((c) => c.classList.toggle("is-active", c === card));
+}
+
+cards.forEach((card) => {
+  card.addEventListener("click", () => {
+    setActiveCard(card);
+
+    const bg = card.dataset.bg || "bg-default";
+    setStageBg(bg);
+
+    const target = card.dataset.target;
+    if (target) {
+      const el = document.querySelector(target);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  });
+});
+
+// Default select first card
+if (cards[0]) setActiveCard(cards[0]);
+
+// =========================
+// Tangmo (mic + drawer + chat)  (ใช้ endpoint เดิม /api/chat และ /api/tts)
+// =========================
+const micBtn = $("#tangmo-mic");
+const statusEl = $("#tangmo-status");
+const drawer = $("#tangmo-drawer");
+const handle = $("#drawer-handle");
+const textInput = $("#tangmo-text");
+const sendBtn = $("#tangmo-send");
+const clearBtn = $("#tangmo-clear");
+const imgInput = $("#tangmo-image");
+const chatEl = $("#tangmo-chat");
 
 let recognition;
 let isListening = false;
@@ -44,11 +197,8 @@ function openDrawer(open) {
   drawer.classList.toggle("is-open", !!open);
   drawer.setAttribute("aria-hidden", open ? "false" : "true");
 }
-
-// Tap on handle toggles drawer (noob-friendly)
 if (handle) handle.addEventListener("click", () => openDrawer(!drawer.classList.contains("is-open")));
 
-// Quick cue (browser voice) to avoid silence
 function quickCue(text = "โอเคค่ะ ขอคิดแป๊บนะคะ") {
   try {
     if (!("speechSynthesis" in window)) return;
@@ -78,15 +228,14 @@ async function speak(text) {
     body: JSON.stringify({ text: voiceText }),
   });
 
-  // รองรับทั้งแบบส่งกลับเป็นไฟล์เสียง (blob) และแบบ JSON (บางคนทำ endpoint คนละแบบ)
   const ct = (res.headers.get("content-type") || "").toLowerCase();
   let audio;
   if (ct.includes("application/json")) {
     const j = await res.json();
-    // ตัวอย่างที่เจอบ่อย: { audio_base64: "..." } หรือ { audio: "base64..." }
     const b64 = j.audio_base64 || j.audio || "";
     if (!b64) throw new Error("tts-json-no-audio");
-    const bin = atob(b64.replace(/^data:audio\/[a-zA-Z0-9.+-]+;base64,/, ""));
+    const raw = b64.replace(/^data:audio\/[a-zA-Z0-9.+-]+;base64,/, "");
+    const bin = atob(raw);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const blob = new Blob([bytes], { type: "audio/mpeg" });
@@ -110,32 +259,16 @@ async function postChatPayload(payload) {
   return res.json();
 }
 
-function withTimeout(promise, ms = 12000) {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error("timeout")), ms);
-    promise
-      .then((v) => {
-        clearTimeout(id);
-        resolve(v);
-      })
-      .catch((e) => {
-        clearTimeout(id);
-        reject(e);
-      });
-  });
-}
-
 async function askTangmo(text, imageBase64 = null) {
   setMic("thinking", "Tangmo กำลังคิด…");
   quickCue("โอเคค่ะ ขอคิดแป๊บนะคะ");
 
-  if (chatEl) pushChat("user", text);
+  pushChat("user", text);
 
   try {
     const msgText = imageBase64 ? `${text}\n\n[แนบรูปภาพ 1 รูป]` : text;
-
-    // ทำ payload หลายแบบ เผื่อ endpoint คนละเวอร์ชัน (กันพัง)
     const messages = [...(memory || []), { role: "user", content: msgText }].slice(-12);
+
     const payloads = [
       { message: msgText, history: memory, image: imageBase64 || undefined },
       { text: msgText, history: memory, image: imageBase64 || undefined },
@@ -146,6 +279,7 @@ async function askTangmo(text, imageBase64 = null) {
 
     let data = null;
     let lastErr = null;
+
     for (const p of payloads) {
       try {
         data = await withTimeout(postChatPayload(p), 12000);
@@ -156,7 +290,6 @@ async function askTangmo(text, imageBase64 = null) {
     }
     if (!data) throw lastErr || new Error("chat-no-response");
 
-    // รองรับ response หลายรูปแบบ
     const reply =
       data.reply ||
       data.text ||
@@ -171,11 +304,11 @@ async function askTangmo(text, imageBase64 = null) {
     saveMemory("user", text);
     saveMemory("assistant", reply);
 
-    if (chatEl) pushChat("assistant", reply);
+    pushChat("assistant", reply);
     await speak(reply);
   } catch (e) {
     const fallback = "ขอโทษนะคะ เมื่อกี้ระบบตอบช้าหน่อย ลองถามสั้นๆ อีกทีได้ไหมคะ";
-    if (chatEl) pushChat("assistant", fallback);
+    pushChat("assistant", fallback);
     setMic("idle", fallback);
   }
 }
@@ -183,7 +316,7 @@ async function askTangmo(text, imageBase64 = null) {
 function initSpeech() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
-    setMic("idle", "มือถือเครื่องนี้ไม่รองรับ Speech Recognition ค่ะ (พิมพ์ถามแทนได้)");
+    setMic("idle", "เครื่องนี้ไม่รองรับ Speech Recognition ค่ะ (พิมพ์ถามแทนได้)");
     openDrawer(true);
     return;
   }
@@ -232,16 +365,15 @@ if (sendBtn) {
     const t = (textInput?.value || "").trim();
     if (!t) return;
     textInput.value = "";
+    openDrawer(true);
     askTangmo(t);
   });
 }
-
 if (textInput) {
   textInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") sendBtn?.click();
   });
 }
-
 if (clearBtn) {
   clearBtn.addEventListener("click", () => {
     memory = [];
@@ -250,13 +382,11 @@ if (clearBtn) {
     setMic("idle", "ล้างบทสนทนาแล้วค่ะ");
   });
 }
-
 if (imgInput) {
   imgInput.addEventListener("change", async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Convert to base64 (lightweight)
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = String(reader.result || "");
@@ -270,141 +400,6 @@ if (imgInput) {
 
 setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
 
-// =========================
-// Services UI
-// =========================
-const SERVICE_DATA = {
-  design: {
-    tag: "งานออกแบบ",
-    title: "ออกแบบ Mood & Tone / เลือกวัสดุ",
-    desc: "ช่วยจัดแนวทางดีไซน์ เลือกโทนผ้า/ผนัง/พื้นให้เข้ากับพื้นที่ใช้งานจริง",
-    bullets: [
-      ["เหมาะกับ", "บ้าน / โชว์รูม / สำนักงาน"],
-      ["ได้อะไร", "แนวทาง + ตัวเลือกวัสดุ"],
-      ["จุดเด่น", "คุมโทนให้ดูแพง"],
-      ["สไตล์", "เรียบหรู ไม่รก"],
-    ],
-  },
-  curtain: {
-    tag: "ผ้าม่าน",
-    title: "ผ้าม่าน มู่ลี่ ม่านปรับแสง",
-    desc: "เลือกชนิดผ้า/ระบบรางตามแสง การใช้งาน และความเป็นส่วนตัว",
-    bullets: [
-      ["แสงแรง", "เน้นกันยูวี / ทึบแสง"],
-      ["ทำความสะอาด", "เลือกผ้าดูแลง่าย"],
-      ["ฟังก์ชัน", "กันร้อน / เก็บแสง"],
-      ["ภาพรวม", "ดูเรียบร้อย"],
-    ],
-  },
-  wall: {
-    tag: "ผนัง",
-    title: "วอลเปเปอร์ สีผนัง ฉากกั้น",
-    desc: "เพิ่มคาแรกเตอร์ห้องแบบคุมโทน ทำให้ดูใหม่แต่ไม่เวอร์",
-    bullets: [
-      ["หน่วยงาน", "โทนสุภาพ สะอาด"],
-      ["บ้าน", "อุ่น นุ่ม"],
-      ["งานไว", "ติดตั้งเป็นระบบ"],
-      ["คุมภาพรวม", "ไม่หลุดธีม"],
-    ],
-  },
-  floor: {
-    tag: "พื้น",
-    title: "ปูพื้น วินิล กระเบื้องยาง",
-    desc: "เลือกวัสดุให้เหมาะกับการเดิน การทำความสะอาด และการใช้งานจริง",
-    bullets: [
-      ["ทนใช้งาน", "เหมาะองค์กร/หน่วยงาน"],
-      ["ดูแลง่าย", "เช็ดถูสะดวก"],
-      ["ความปลอดภัย", "กันลื่น"],
-      ["ความสวย", "ลายเรียบ ดูแพง"],
-    ],
-  },
-  install: {
-    tag: "ติดตั้ง",
-    title: "วัดหน้างาน ติดตั้ง เก็บงาน",
-    desc: "ทีมช่างเก็บรายละเอียดเรียบร้อย งานจบ ไม่ทิ้งงาน",
-    bullets: [
-      ["มาตรฐาน", "วัดจริง ติดตั้งจริง"],
-      ["ความเรียบร้อย", "เก็บขอบ/ราง"],
-      ["เวลา", "นัดหมายชัดเจน"],
-      ["ผลลัพธ์", "ดูเนี๊ยบ"],
-    ],
-  },
-  org: {
-    tag: "งานหน่วยงาน/องค์กร",
-    title: "งานราชการ โรงพยาบาล อำเภอ",
-    desc: "โทนเรียบร้อย ดูเป็นทางการ วัสดุเน้นทนและดูแลง่าย",
-    bullets: [
-      ["ภาพลักษณ์", "สุภาพ เป็นระเบียบ"],
-      ["ความทน", "ใช้งานหนักได้"],
-      ["ทำความสะอาด", "ง่าย"],
-      ["เอกสาร", "คุยงานเป็นระบบ"],
-    ],
-  },
-};
-
-const rail = document.getElementById("service-rail");
-const vTag = document.getElementById("viewer-tag");
-const vTitle = document.getElementById("viewer-title");
-const vDesc = document.getElementById("viewer-desc");
-const vGrid = document.getElementById("viewer-grid");
-
-function renderServiceCards() {
-  if (!rail) return;
-  rail.innerHTML = "";
-
-  Object.entries(SERVICE_DATA).forEach(([key, s], idx) => {
-    const card = document.createElement("div");
-    card.className = "card" + (idx === 0 ? " is-active" : "");
-    card.dataset.key = key;
-
-    card.innerHTML = `
-      <div class="card__title">${s.tag}</div>
-      <p class="card__desc">${s.desc}</p>
-    `;
-
-    card.addEventListener("click", () => selectService(key));
-    rail.appendChild(card);
-  });
-}
-
-function selectService(key) {
-  const s = SERVICE_DATA[key];
-  if (!s) return;
-
-  rail?.querySelectorAll(".card").forEach((c) => c.classList.toggle("is-active", c.dataset.key === key));
-
-  if (vTag) vTag.textContent = s.tag;
-  if (vTitle) vTitle.textContent = s.title;
-  if (vDesc) vDesc.textContent = s.desc;
-
-  if (vGrid) {
-    vGrid.innerHTML = "";
-    (s.bullets || []).forEach(([t, b]) => {
-      const d = document.createElement("div");
-      d.className = "mini";
-      d.innerHTML = `<div class="mini__t">${t}</div><p class="mini__b">${b}</p>`;
-      vGrid.appendChild(d);
-    });
-  }
-}
-
-renderServiceCards();
-selectService(Object.keys(SERVICE_DATA)[0]);
-
-// =========================
-// Topbar auto-hide on scroll
-// =========================
-const topbar = document.getElementById("topbar");
-let lastY = window.scrollY;
-window.addEventListener("scroll", () => {
-  if (!topbar) return;
-  const y = window.scrollY;
-  const goingDown = y > lastY;
-  if (goingDown && y > 30) topbar.classList.add("is-hidden");
-  else topbar.classList.remove("is-hidden");
-  lastY = y;
-});
-
 // footer year
-const y = document.getElementById("y");
+const y = $("#y");
 if (y) y.textContent = new Date().getFullYear();
