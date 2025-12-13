@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <title>อรุณี ผ้าม่าน – บริการตกแต่งภายในครบวงจร</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f2f4f7" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body class="is-intro-playing">
+    <!-- Background: blur image that changes by selected card -->
+    <div id="bg-layer" aria-hidden="true">
+      <img id="bg-image" alt="" />
+      <div class="bg-vignette"></div>
+      <div class="bg-grain"></div>
+    </div>
+
+    <!-- Intro overlay (video optional) -->
+    <section id="intro" class="intro" role="dialog" aria-label="Intro">
+      <div class="intro-card">
+        <div class="intro-logo">AP</div>
+        <div class="intro-title">อรุณี บริการ</div>
+        <div class="intro-sub">บริการตกแต่งภายในครบวงจร</div>
+        <button id="skipIntro" class="btn btn-ghost" type="button">ข้าม</button>
+      </div>
+    </section>
+
+    <!-- Tangmo Dock (fixed, replaces old header/search) -->
+    <header class="dock" role="banner">
+      <div class="dock-inner">
+        <div class="dock-left">
+          <div class="neo-switch" title="เปิด/ปิดเสียง">
+            <input id="voiceToggle" type="checkbox" checked />
+            <span class="neo-switch-ui" aria-hidden="true"></span>
+          </div>
+        </div>
+
+        <div class="dock-center">
+          <button id="micBtn" class="mic" type="button" aria-label="คุยกับ Tangmo">
+            <span class="mic-ring" aria-hidden="true"></span>
+            <span class="mic-core" aria-hidden="true"></span>
+          </button>
+          <div class="mic-label">
+            <div class="mic-name">Tangmo</div>
+            <div class="mic-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
+          </div>
+        </div>
+
+        <div class="dock-right">
+          <label class="upload-btn" for="imageInput" title="ส่งรูปหน้างาน">
+            <input id="imageInput" type="file" accept="image/*" />
+            <span aria-hidden="true">＋</span>
+          </label>
+        </div>
+      </div>
+    </header>
+
+    <main class="page">
+      <!-- TOP / RED AREA (replaced with Tangmo dock). Now: small hero -->
+      <section class="hero" aria-label="สรุปร้าน">
+        <div class="hero-card">
+          <h1>ตกแต่งภายในครบวงจร</h1>
+          <p>
+            ถึงชื่อร้านจะมีคำว่า “ผ้าม่าน” แต่เราดูแลงานตกแต่งภายในได้ครบตั้งแต่แบบ–เลือกวัสดุ–ติดตั้ง
+            เหมาะทั้งบ้านพักอาศัย และหน่วยงาน/องค์กรค่ะ
+          </p>
+          <div class="hero-chips">
+            <span class="chip">บ้านพักอาศัย</span>
+            <span class="chip">หน่วยงานราชการ</span>
+            <span class="chip">องค์กร/โรงพยาบาล</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAROUSEL MENU -->
+      <section class="section" aria-label="เมนูบริการ">
+        <div class="section-head">
+          <h2>เลือกหมวดงาน</h2>
+          <p>ปัดซ้าย–ขวาได้อิสระ แตะเพื่อเปิดรายละเอียด และเปลี่ยนภาพพื้นหลังแบบเบลอ</p>
+        </div>
+
+        <div id="cards" class="cards" role="list" aria-label="การ์ดเมนู">
+          <!-- populated by JS -->
+        </div>
+      </section>
+
+      <!-- BLUE: Portfolio Viewer (linked to selected card) -->
+      <section class="section" aria-label="ผลงาน">
+        <div class="viewer" id="viewer">
+          <div class="viewer-head">
+            <span id="viewerTag" class="pill">หมวดงาน</span>
+            <h3 id="viewerTitle">—</h3>
+            <p id="viewerDesc">—</p>
+          </div>
+
+          <div class="viewer-main" id="viewerMain">
+            <div id="viewerPlaceholder" class="viewer-placeholder">
+              เลือกหมวดงานด้านบนเพื่อดูตัวอย่างผลงาน
+            </div>
+            <img id="viewerImage" class="viewer-img" alt="" />
+          </div>
+        </div>
+      </section>
+
+      <!-- GREEN: Thumbnails row -->
+      <section class="section" aria-label="ตัวอย่างเพิ่มเติม">
+        <div class="thumbs-wrap">
+          <div class="thumbs-title">ตัวอย่างผลงาน (ปัดซ้าย–ขวา)</div>
+          <div id="thumbs" class="thumbs" role="list" aria-label="thumbnail"></div>
+        </div>
+      </section>
+
+      <!-- PINK: Trending tones -->
+      <section class="section" aria-label="โทนสีที่กำลังนิยม">
+        <div class="section-head">
+          <h2>โทนสี/วัสดุที่กำลังนิยม</h2>
+          <p>ใส่เป็นไอเดียให้ลูกค้าเลือก mood &amp; tone ได้ไวขึ้น (อัปเดตได้เรื่อย ๆ)</p>
+        </div>
+
+        <div id="trendGrid" class="trend-grid" aria-label="trend"></div>
+      </section>
+
+      <!-- Contact (keep simple) -->
+      <section class="section" aria-label="ติดต่อร้าน">
+        <div class="contact">
+          <h2>ติดต่อร้าน</h2>
+          <div class="contact-grid">
+            <div class="contact-card">
+              <div class="contact-label">โทรศัพท์</div>
+              <div class="contact-value">(ใส่เบอร์ร้านตรงนี้)</div>
+            </div>
+            <div class="contact-card">
+              <div class="contact-label">LINE OA</div>
+              <div class="contact-value">(ใส่ไอดี/ลิงก์ตรงนี้)</div>
+            </div>
+            <div class="contact-card">
+              <div class="contact-label">พื้นที่บริการ</div>
+              <div class="contact-value">เชียงคำ – พะเยา – ภาคเหนือตอนบน</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tiny toast for status (no "คิดแปบ" spam) -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Hidden chat log (optional) -->
+    <section id="chat" class="chat" aria-label="แชท" hidden>
+      <div class="chat-head">
+        <div class="chat-title">บันทึกการคุยกับ Tangmo</div>
+        <button id="chatClose" class="btn btn-ghost" type="button">ปิด</button>
+      </div>
+      <div id="chatLog" class="chat-log"></div>
+    </section>
+
+    <script src="script.js" defer></script>
+  </body>
+</html>

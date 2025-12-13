@@ -1,405 +1,593 @@
-// =========================
-// Utils
-// =========================
-const $ = (q) => document.querySelector(q);
-const $$ = (q) => Array.from(document.querySelectorAll(q));
+/*
+  Tangmo v1.5 (Front-end only)
+  - Neumorphic theme
+  - Card carousel menu (free scroll, no snap)
+  - Viewer + thumbs + trending tones
+  - Voice (Web Speech API) -> /api/chat -> /api/tts
+  - No "คิดแปบ" spam: use mic glow + small toast only
+*/
 
-function withTimeout(promise, ms = 12000) {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error("timeout")), ms);
-    promise.then((v) => { clearTimeout(id); resolve(v); })
-           .catch((e) => { clearTimeout(id); reject(e); });
+// =======================
+// DATA
+// =======================
+
+const SERVICE_DATA = {
+  design: {
+    tag: "ออกแบบ / เลือกวัสดุ",
+    title: "Mood & Tone ให้ลง",
+    desc:
+      "ช่วยดูแนวทางโทนสี วัสดุ และความรู้สึกของพื้นที่ ให้เข้ากับบ้าน/องค์กร แบบไม่ฝืน",
+    bg: "wall-BG2.jpg",
+  },
+  curtain: {
+    tag: "ผ้าม่าน",
+    title: "แสง/ความเป็นส่วนตัว",
+    desc:
+      "แนะนำผ้าม่านตามแสง การใช้งาน และความเรียบร้อยของพื้นที่ เช่น บ้าน/สำนักงาน/ราชการ",
+    bg: "curtain-bg1.jpg",
+  },
+  wall: {
+    tag: "ผนัง",
+    title: "ผนัง/งานตกแต่งผนัง",
+    desc:
+      "ลุคเรียบหรู ทำความสะอาดง่าย หรือเพิ่มมิติด้วยวัสดุ—เลือกให้เหมาะกับพื้นที่ใช้งานจริง",
+    bg: "wall-BG1.jpg",
+  },
+  floor: {
+    tag: "พื้น",
+    title: "พื้น/วัสดุปูพื้น",
+    desc:
+      "โฟกัสความทนทาน การดูแลรักษา และภาพรวมของพื้นที่ให้ดูแพงแบบไม่พยายาม",
+    bg: "wall-BG2.jpg",
+  },
+  install: {
+    tag: "ติดตั้ง",
+    title: "มาตรฐานงานติดตั้ง",
+    desc:
+      "ติดตั้งให้เรียบร้อย เนี๊ยบ เก็บงานครบ ลดความวุ่นวายหน้างาน",
+    bg: "wall-BG2.jpg",
+  },
+  aftercar: {
+    tag: "บริการหลังการขาย",
+    title: "ดูแลต่อเนื่อง",
+    desc:
+      "งานต้องอยู่กับคุณไปนาน ๆ เลยต้องดูแล ซ่อม/ปรับ/แก้ ให้จบแบบมืออาชีพ",
+    bg: "wall-BG1.jpg",
+  },
+};
+
+// ตัวอย่างผลงาน (ใส่ไฟล์จริงทีหลังได้)
+// ถ้ามีไฟล์อยู่ตาม path นี้ มันจะขึ้นเอง
+const SERVICE_MEDIA = {
+  design: ["assets/portfolio/design-1.jpg", "assets/portfolio/design-2.jpg"],
+  curtain: ["assets/portfolio/curtain-1.jpg", "assets/portfolio/curtain-2.jpg"],
+  wall: ["assets/portfolio/wall-1.jpg", "assets/portfolio/wall-2.jpg"],
+  floor: ["assets/portfolio/floor-1.jpg", "assets/portfolio/floor-2.jpg"],
+  install: ["assets/portfolio/install-1.jpg", "assets/portfolio/install-2.jpg"],
+  aftercar: ["assets/portfolio/after-1.jpg"],
+};
+
+const WELCOME_LINES = [
+  "สวัสดีค่ะ ที่นี่อรุณีผ้าม่านนะคะ ถึงชื่อจะเป็นผ้าม่าน แต่จริง ๆ รับงานตกแต่งภายในครบวงจรเลยค่ะ เดินดูเว็บได้สบาย ๆ นะคะ",
+  "ยินดีต้อนรับค่ะ ร้านอรุณีรับงานตกแต่งภายในหลายแบบ ไม่ได้มีแค่ผ้าม่านอย่างเดียวค่ะ",
+  "เข้ามาแล้วสบายใจได้เลยค่ะ ถ้าถามอะไรเมื่อไหร่ แตงโมอยู่ตรงปุ่มนี้นะคะ",
+];
+
+const TRENDING = [
+  { name: "Warm Greige", code: "#D9D2C7", note: "เรียบหรู / ใช้ได้ทุกห้อง" },
+  { name: "Soft Sand", code: "#E9E1D6", note: "บ้านดูอบอุ่น ไม่จืด" },
+  { name: "Smoky Taupe", code: "#B9AEA1", note: "เข้ากับไม้/ทองด้าน" },
+  { name: "Concrete Mist", code: "#C9CED3", note: "ทางการ / องค์กร" },
+  { name: "Graphite", code: "#3B3F46", note: "ตัดกับผ้าสว่าง ดูแพง" },
+  { name: "Ink Navy", code: "#233047", note: "สุภาพ มีมิติ" },
+];
+
+// =======================
+// HELPERS
+// =======================
+
+function $(sel) {
+  return document.querySelector(sel);
+}
+
+function clamp(n, a, b) {
+  return Math.max(a, Math.min(b, n));
+}
+
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function toast(msg, ms = 1400) {
+  const el = $("#toast");
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add("show");
+  window.clearTimeout(toast._t);
+  toast._t = window.setTimeout(() => el.classList.remove("show"), ms);
+}
+
+async function safeImageExists(url) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
   });
 }
 
-// =========================
-// Topbar auto-hide
-// =========================
-const topbar = $("#topbar");
-let lastY = window.scrollY;
-window.addEventListener("scroll", () => {
-  if (!topbar) return;
-  const y = window.scrollY;
-  const goingDown = y > lastY;
-  if (goingDown && y > 30) topbar.classList.add("is-hidden");
-  else topbar.classList.remove("is-hidden");
-  lastY = y;
-});
+// =======================
+// INTRO
+// =======================
 
-// =========================
-// Reveal on scroll (free scroll + reveal)
-// =========================
-const revealEls = $$(".reveal");
-const io = new IntersectionObserver((entries) => {
-  entries.forEach((e) => {
-    if (e.isIntersecting) e.target.classList.add("is-in");
-  });
-}, { threshold: 0.12 });
+(function initIntro() {
+  const intro = $("#intro");
+  const skip = $("#skipIntro");
+  if (!intro) return;
 
-revealEls.forEach((el) => io.observe(el));
-
-// =========================
-// Stage BG swap (blur/outfocus vertical images)
-// =========================
-function setStageBg(bgName) {
-  const imgs = $$(".stageBg__img");
-  imgs.forEach((el) => {
-    const isMatch = el.dataset.bg === bgName;
-    el.classList.toggle("is-active", isMatch);
-  });
-  // fallback ถ้าไม่มีชื่อ
-  const anyActive = imgs.some((el) => el.classList.contains("is-active"));
-  if (!anyActive) {
-    const def = imgs.find((x) => x.dataset.bg === "bg-default");
-    def?.classList.add("is-active");
-  }
-}
-setStageBg("bg-default");
-
-// =========================
-// Carousel 3D Ring (free drag rotate)
-// =========================
-const ring = $("#ring");
-const cards = $$(".card3d");
-
-let angle = 0;          // current rotation
-let velocity = 0;       // inertia
-let isDown = false;
-let lastX = 0;
-
-function layoutRing() {
-  if (!ring || cards.length === 0) return;
-  const n = cards.length;
-  const step = 360 / n;
-  const radius = 320; // depth
-  cards.forEach((card, i) => {
-    const a = step * i;
-    // Each card stands facing out
-    card.style.transform = `rotateY(${a}deg) translateZ(${radius}px)`;
-  });
-}
-layoutRing();
-
-function setRingRotation(a) {
-  if (!ring) return;
-  ring.style.transform = `rotateY(${a}deg)`;
-}
-
-function animateRing() {
-  // inertia decay
-  angle += velocity;
-  velocity *= 0.92;
-  if (Math.abs(velocity) < 0.0008) velocity = 0;
-
-  setRingRotation(angle);
-  requestAnimationFrame(animateRing);
-}
-animateRing();
-
-function pointerDown(x) {
-  isDown = true;
-  lastX = x;
-}
-function pointerMove(x) {
-  if (!isDown) return;
-  const dx = x - lastX;
-  lastX = x;
-
-  // sensitivity
-  const delta = dx * 0.22;
-  angle += delta;
-  velocity = delta; // keep inertia
-}
-function pointerUp() {
-  isDown = false;
-}
-
-if (ring) {
-  // mouse
-  ring.addEventListener("mousedown", (e) => pointerDown(e.clientX));
-  window.addEventListener("mousemove", (e) => pointerMove(e.clientX));
-  window.addEventListener("mouseup", pointerUp);
-
-  // touch
-  ring.addEventListener("touchstart", (e) => pointerDown(e.touches[0].clientX), { passive: true });
-  ring.addEventListener("touchmove", (e) => pointerMove(e.touches[0].clientX), { passive: true });
-  ring.addEventListener("touchend", pointerUp);
-}
-
-// Select card -> scroll to section + set BG
-function setActiveCard(card) {
-  cards.forEach((c) => c.classList.toggle("is-active", c === card));
-}
-
-cards.forEach((card) => {
-  card.addEventListener("click", () => {
-    setActiveCard(card);
-
-    const bg = card.dataset.bg || "bg-default";
-    setStageBg(bg);
-
-    const target = card.dataset.target;
-    if (target) {
-      const el = document.querySelector(target);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-  });
-});
-
-// Default select first card
-if (cards[0]) setActiveCard(cards[0]);
-
-// =========================
-// Tangmo (mic + drawer + chat)  (ใช้ endpoint เดิม /api/chat และ /api/tts)
-// =========================
-const micBtn = $("#tangmo-mic");
-const statusEl = $("#tangmo-status");
-const drawer = $("#tangmo-drawer");
-const handle = $("#drawer-handle");
-const textInput = $("#tangmo-text");
-const sendBtn = $("#tangmo-send");
-const clearBtn = $("#tangmo-clear");
-const imgInput = $("#tangmo-image");
-const chatEl = $("#tangmo-chat");
-
-let recognition;
-let isListening = false;
-let memory = JSON.parse(sessionStorage.getItem("tangmo_memory") || "[]");
-
-function setMic(state, text) {
-  if (!micBtn) return;
-  micBtn.className = `mic ${state}`;
-  if (statusEl) statusEl.textContent = text;
-}
-
-function pushChat(role, text) {
-  if (!chatEl) return;
-  const wrap = document.createElement("div");
-  wrap.className = `msg ${role}`;
-  const b = document.createElement("div");
-  b.className = "bubble";
-  b.textContent = text;
-  wrap.appendChild(b);
-  chatEl.appendChild(wrap);
-  chatEl.scrollTop = chatEl.scrollHeight;
-}
-
-function saveMemory(role, content) {
-  memory.push({ role, content });
-  if (memory.length > 10) memory.shift();
-  sessionStorage.setItem("tangmo_memory", JSON.stringify(memory));
-}
-
-function openDrawer(open) {
-  if (!drawer) return;
-  drawer.classList.toggle("is-open", !!open);
-  drawer.setAttribute("aria-hidden", open ? "false" : "true");
-}
-if (handle) handle.addEventListener("click", () => openDrawer(!drawer.classList.contains("is-open")));
-
-function quickCue(text = "โอเคค่ะ ขอคิดแป๊บนะคะ") {
-  try {
-    if (!("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "th-TH";
-    window.speechSynthesis.speak(u);
-  } catch {}
-}
-
-function makeVoiceFriendly(text) {
-  return String(text || "")
-    .replace(/\s+/g, " ")
-    .replace(/([.!?])\s/g, "$1\n")
-    .replace(/ค่ะ\s/g, "ค่ะ\n")
-    .replace(/นะคะ\s/g, "นะคะ\n")
-    .trim();
-}
-
-async function speak(text) {
-  setMic("speaking", "Tangmo กำลังพูด…");
-
-  const voiceText = makeVoiceFriendly(text);
-  const res = await fetch("/api/tts", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: voiceText }),
-  });
-
-  const ct = (res.headers.get("content-type") || "").toLowerCase();
-  let audio;
-  if (ct.includes("application/json")) {
-    const j = await res.json();
-    const b64 = j.audio_base64 || j.audio || "";
-    if (!b64) throw new Error("tts-json-no-audio");
-    const raw = b64.replace(/^data:audio\/[a-zA-Z0-9.+-]+;base64,/, "");
-    const bin = atob(raw);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    const blob = new Blob([bytes], { type: "audio/mpeg" });
-    audio = new Audio(URL.createObjectURL(blob));
-  } else {
-    const blob = await res.blob();
-    audio = new Audio(URL.createObjectURL(blob));
-  }
-
-  audio.onended = () => setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
-  audio.play().catch(() => setMic("idle", "แตะไมค์อีกครั้งได้เลยนะคะ"));
-}
-
-async function postChatPayload(payload) {
-  const res = await fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error(`chat-http-${res.status}`);
-  return res.json();
-}
-
-async function askTangmo(text, imageBase64 = null) {
-  setMic("thinking", "Tangmo กำลังคิด…");
-  quickCue("โอเคค่ะ ขอคิดแป๊บนะคะ");
-
-  pushChat("user", text);
-
-  try {
-    const msgText = imageBase64 ? `${text}\n\n[แนบรูปภาพ 1 รูป]` : text;
-    const messages = [...(memory || []), { role: "user", content: msgText }].slice(-12);
-
-    const payloads = [
-      { message: msgText, history: memory, image: imageBase64 || undefined },
-      { text: msgText, history: memory, image: imageBase64 || undefined },
-      { input: msgText, history: memory, image: imageBase64 || undefined },
-      { messages, image: imageBase64 || undefined },
-      { messages, image_base64: imageBase64 || undefined },
-    ];
-
-    let data = null;
-    let lastErr = null;
-
-    for (const p of payloads) {
-      try {
-        data = await withTimeout(postChatPayload(p), 12000);
-        break;
-      } catch (e) {
-        lastErr = e;
-      }
-    }
-    if (!data) throw lastErr || new Error("chat-no-response");
-
-    const reply =
-      data.reply ||
-      data.text ||
-      data.output_text ||
-      data?.message ||
-      data?.choices?.[0]?.message?.content ||
-      (Array.isArray(data?.choices?.[0]?.message?.content)
-        ? data.choices[0].message.content.map((x) => x.text || "").join(" ")
-        : "") ||
-      "ขอโทษนะคะ ตอนนี้ตอบไม่ได้";
-
-    saveMemory("user", text);
-    saveMemory("assistant", reply);
-
-    pushChat("assistant", reply);
-    await speak(reply);
-  } catch (e) {
-    const fallback = "ขอโทษนะคะ เมื่อกี้ระบบตอบช้าหน่อย ลองถามสั้นๆ อีกทีได้ไหมคะ";
-    pushChat("assistant", fallback);
-    setMic("idle", fallback);
-  }
-}
-
-function initSpeech() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    setMic("idle", "เครื่องนี้ไม่รองรับ Speech Recognition ค่ะ (พิมพ์ถามแทนได้)");
-    openDrawer(true);
+  const doneKey = "arunee_intro_done";
+  const already = sessionStorage.getItem(doneKey);
+  if (already === "1") {
+    intro.remove();
+    document.body.classList.remove("is-intro-playing");
+    // welcome once per session AFTER intro
+    queueWelcome();
     return;
   }
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "th-TH";
-  recognition.continuous = false;
+  function finishIntro() {
+    sessionStorage.setItem(doneKey, "1");
+    intro.classList.add("out");
+    window.setTimeout(() => {
+      intro.remove();
+      document.body.classList.remove("is-intro-playing");
+      queueWelcome();
+    }, 380);
+  }
 
-  recognition.onstart = () => setMic("listening", "Tangmo กำลังฟัง…");
-  recognition.onresult = (e) => {
-    isListening = false;
-    const text = e.results?.[0]?.[0]?.transcript || "";
-    if (text.trim()) askTangmo(text.trim());
-    else setMic("idle", "ฟังไม่ชัด ลองใหม่อีกทีนะคะ");
-  };
-  recognition.onerror = () => {
-    isListening = false;
-    setMic("idle", "ฟังไม่ชัด ลองใหม่อีกทีนะคะ");
-  };
+  skip?.addEventListener("click", finishIntro);
+  // auto finish after 1.9s
+  window.setTimeout(finishIntro, 1900);
+})();
+
+// =======================
+// THEME BG (blur)
+// =======================
+
+function setBg(src) {
+  const img = $("#bg-image");
+  if (!img) return;
+  img.src = src;
+  img.classList.remove("ready");
+  img.onload = () => img.classList.add("ready");
 }
 
-if (micBtn) {
-  micBtn.addEventListener("click", () => {
-    if (!recognition) initSpeech();
-    if (!recognition) return;
+// =======================
+// CARDS (free scroll + out-focus by distance)
+// =======================
 
-    // tap once = start, tap again = stop
-    if (!isListening) {
-      isListening = true;
-      try {
-        recognition.start();
-      } catch {
-        isListening = false;
-        setMic("idle", "แตะอีกครั้งเพื่อเริ่มฟังนะคะ");
-      }
-    } else {
-      isListening = false;
-      try { recognition.stop(); } catch {}
-      setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
+function buildCards() {
+  const wrap = $("#cards");
+  if (!wrap) return;
+
+  const order = ["design", "curtain", "wall", "floor", "install", "aftercar"];
+  wrap.innerHTML = "";
+
+  order.forEach((key) => {
+    const d = SERVICE_DATA[key];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "card";
+    btn.setAttribute("role", "listitem");
+    btn.dataset.key = key;
+    btn.innerHTML = `
+      <div class="card-top">
+        <span class="pill pill-soft">${d.tag}</span>
+      </div>
+      <div class="card-title">${d.title}</div>
+      <div class="card-desc">${d.desc}</div>
+    `;
+    btn.addEventListener("click", () => selectService(key, true));
+    wrap.appendChild(btn);
+  });
+
+  // initial
+  selectService("design", false);
+  // compute focus continuously
+  const onTick = () => {
+    applyCardFocus(wrap);
+    requestAnimationFrame(onTick);
+  };
+  requestAnimationFrame(onTick);
+}
+
+function applyCardFocus(wrap) {
+  const cards = Array.from(wrap.querySelectorAll(".card"));
+  if (!cards.length) return;
+
+  const rect = wrap.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+
+  cards.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const dist = Math.abs(x - cx);
+    const t = clamp(dist / (rect.width * 0.55), 0, 1);
+    const blur = 6 * t;
+    const scale = 1 - 0.06 * t;
+    const opacity = 1 - 0.28 * t;
+    el.style.filter = `blur(${blur.toFixed(2)}px)`;
+    el.style.transform = `translateY(${(t * 4).toFixed(2)}px) scale(${scale.toFixed(3)})`;
+    el.style.opacity = opacity.toFixed(3);
+  });
+
+  // pick the closest to center as "active" (visual only)
+  let best = { el: null, dist: Infinity };
+  cards.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const dist = Math.abs(x - cx);
+    if (dist < best.dist) best = { el, dist };
+  });
+  cards.forEach((el) => el.classList.toggle("is-front", el === best.el));
+}
+
+// =======================
+// VIEWER + THUMBS
+// =======================
+
+async function selectService(key, scrollIntoView) {
+  const data = SERVICE_DATA[key];
+  if (!data) return;
+
+  // active highlight
+  document.querySelectorAll(".card").forEach((c) => {
+    c.classList.toggle("active", c.dataset.key === key);
+  });
+
+  // bg blur
+  setBg(data.bg);
+
+  // viewer text
+  $("#viewerTag").textContent = data.tag;
+  $("#viewerTitle").textContent = data.title;
+  $("#viewerDesc").textContent = data.desc;
+
+  // viewer image + thumbs
+  const mainImg = $("#viewerImage");
+  const placeholder = $("#viewerPlaceholder");
+  const thumbs = $("#thumbs");
+  thumbs.innerHTML = "";
+
+  const candidates = (SERVICE_MEDIA[key] || []).slice(0, 12);
+  const existing = [];
+  for (const url of candidates) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await safeImageExists(url)) existing.push(url);
+    if (existing.length >= 10) break;
+  }
+
+  if (!existing.length) {
+    mainImg.removeAttribute("src");
+    mainImg.classList.remove("show");
+    placeholder.style.display = "flex";
+    placeholder.textContent = "(ยังไม่ใส่รูปผลงานในหมวดนี้ — ใส่ไฟล์ลง assets/portfolio ได้เลยค่ะ)";
+  } else {
+    placeholder.style.display = "none";
+    mainImg.src = existing[0];
+    mainImg.classList.add("show");
+  }
+
+  existing.forEach((url, idx) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "thumb";
+    b.setAttribute("role", "listitem");
+    b.innerHTML = `<img alt="" src="${url}" loading="lazy" />`;
+    if (idx === 0) b.classList.add("active");
+    b.addEventListener("click", () => {
+      document.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
+      b.classList.add("active");
+      placeholder.style.display = "none";
+      mainImg.src = url;
+      mainImg.classList.add("show");
+    });
+    thumbs.appendChild(b);
+  });
+
+  if (scrollIntoView) {
+    $("#viewer")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+// =======================
+// TREND GRID
+// =======================
+
+function buildTrends() {
+  const grid = $("#trendGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  TRENDING.forEach((t) => {
+    const card = document.createElement("div");
+    card.className = "trend";
+    card.innerHTML = `
+      <div class="swatch" style="background:${t.code}"></div>
+      <div class="trend-name">${t.name}</div>
+      <div class="trend-code">${t.code}</div>
+      <div class="trend-note">${t.note}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// =======================
+// TANGMO (chat + tts)
+// =======================
+
+const state = {
+  messages: [], // short-term memory (context only)
+  listening: false,
+  thinking: false,
+  speaking: false,
+};
+
+function setMicState(next) {
+  const btn = $("#micBtn");
+  if (!btn) return;
+  btn.classList.toggle("is-listening", !!next.listening);
+  btn.classList.toggle("is-thinking", !!next.thinking);
+  btn.classList.toggle("is-speaking", !!next.speaking);
+}
+
+function pushMessage(role, content) {
+  state.messages.push({ role, content });
+  // keep short context
+  if (state.messages.length > 10) state.messages.splice(0, state.messages.length - 10);
+  renderChat();
+}
+
+function renderChat() {
+  const log = $("#chatLog");
+  if (!log) return;
+  log.innerHTML = "";
+  state.messages.forEach((m) => {
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${m.role}`;
+    bubble.textContent = m.content;
+    log.appendChild(bubble);
+  });
+}
+
+function openChat() {
+  const chat = $("#chat");
+  if (!chat) return;
+  chat.hidden = false;
+  chat.classList.add("show");
+}
+
+function closeChat() {
+  const chat = $("#chat");
+  if (!chat) return;
+  chat.classList.remove("show");
+  window.setTimeout(() => (chat.hidden = true), 200);
+}
+
+$("#chatClose")?.addEventListener("click", closeChat);
+
+async function speakText(text) {
+  const toggle = $("#voiceToggle");
+  if (!toggle?.checked) return;
+
+  try {
+    state.speaking = true;
+    setMicState(state);
+
+    const res = await fetch("/api/tts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("TTS failed");
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    await audio.play();
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      state.speaking = false;
+      setMicState(state);
+    };
+  } catch {
+    state.speaking = false;
+    setMicState(state);
+  }
+}
+
+async function askTangmo(userText, extra = {}) {
+  if (!userText || !userText.trim()) return;
+
+  pushMessage("user", userText.trim());
+  openChat();
+
+  state.thinking = true;
+  setMicState(state);
+
+  // IMPORTANT: no fake "คิดแปบ" text. just a toast.
+  toast("Tangmo กำลังตอบ…");
+
+  const controller = new AbortController();
+  const t = window.setTimeout(() => controller.abort(), 22000);
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: state.messages, ...extra }),
+      signal: controller.signal,
+    });
+    window.clearTimeout(t);
+
+    if (!res.ok) {
+      throw new Error(`chat failed (${res.status})`);
     }
-  });
+
+    const data = await res.json();
+    const reply = (data?.text || data?.message || "").trim();
+    if (!reply) throw new Error("empty reply");
+
+    pushMessage("assistant", reply);
+    state.thinking = false;
+    setMicState(state);
+    await speakText(reply);
+  } catch {
+    window.clearTimeout(t);
+    state.thinking = false;
+    setMicState(state);
+    pushMessage(
+      "assistant",
+      "ขอโทษนะคะ ตอนนี้ระบบตอบแชทมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ"
+    );
+    await speakText("ขอโทษนะคะ ตอนนี้ระบบตอบแชทมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ");
+  }
 }
 
-if (sendBtn) {
-  sendBtn.addEventListener("click", () => {
-    const t = (textInput?.value || "").trim();
-    if (!t) return;
-    textInput.value = "";
-    openDrawer(true);
-    askTangmo(t);
+// =======================
+// VOICE INPUT (tap-to-toggle)
+// =======================
+
+function initVoice() {
+  const mic = $("#micBtn");
+  if (!mic) return;
+
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+  if (!SpeechRecognition) {
+    mic.addEventListener("click", () => {
+      toast("เบราว์เซอร์นี้ไม่มี Voice Recognition — พิมพ์แทนได้ค่ะ");
+      openChat();
+    });
+    return;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = "th-TH";
+  rec.interimResults = true;
+  rec.maxAlternatives = 1;
+
+  let finalText = "";
+
+  function start() {
+    finalText = "";
+    state.listening = true;
+    setMicState(state);
+    toast("กำลังฟัง…");
+    try {
+      rec.start();
+    } catch {
+      // ignored
+    }
+  }
+
+  function stop() {
+    state.listening = false;
+    setMicState(state);
+    try {
+      rec.stop();
+    } catch {
+      // ignored
+    }
+  }
+
+  mic.addEventListener("click", () => {
+    if (state.thinking || state.speaking) return;
+    if (!state.listening) start();
+    else stop();
   });
+
+  rec.onresult = (event) => {
+    let interim = "";
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const r = event.results[i];
+      if (r.isFinal) finalText += r[0].transcript;
+      else interim += r[0].transcript;
+    }
+    // show light hint only
+    if (interim.trim()) toast(interim.trim(), 900);
+  };
+
+  rec.onend = async () => {
+    const text = finalText.trim();
+    state.listening = false;
+    setMicState(state);
+    if (text) {
+      await askTangmo(text);
+    }
+  };
+
+  rec.onerror = () => {
+    state.listening = false;
+    setMicState(state);
+  };
 }
-if (textInput) {
-  textInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") sendBtn?.click();
-  });
-}
-if (clearBtn) {
-  clearBtn.addEventListener("click", () => {
-    memory = [];
-    sessionStorage.removeItem("tangmo_memory");
-    if (chatEl) chatEl.innerHTML = "";
-    setMic("idle", "ล้างบทสนทนาแล้วค่ะ");
-  });
-}
-if (imgInput) {
-  imgInput.addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
+
+// =======================
+// IMAGE UPLOAD -> /api/chat (multimodal)
+// =======================
+
+function initUpload() {
+  const input = $("#imageInput");
+  if (!input) return;
+
+  input.addEventListener("change", async () => {
+    const file = input.files?.[0];
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast("ขอเป็นไฟล์รูปนะคะ");
+      input.value = "";
+      return;
+    }
 
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = String(reader.result || "");
-      openDrawer(true);
-      askTangmo("ช่วยดูรูปหน้างานนี้ให้หน่อยค่ะ", base64);
-      imgInput.value = "";
+    reader.onload = async () => {
+      const dataUrl = String(reader.result || "");
+      input.value = "";
+      toast("รับรูปแล้วค่ะ ส่งให้ Tangmo ดู…", 1400);
+      await askTangmo("ช่วยดูรูปหน้างานนี้ให้หน่อยค่ะ", { image: dataUrl });
     };
     reader.readAsDataURL(file);
   });
 }
 
-setMic("idle", "แตะไมค์เพื่อคุยกับ Tangmo");
+// =======================
+// WELCOME AFTER INTRO
+// =======================
 
-// footer year
-const y = $("#y");
-if (y) y.textContent = new Date().getFullYear();
+let _welcomeQueued = false;
+async function queueWelcome() {
+  if (_welcomeQueued) return;
+  _welcomeQueued = true;
+  const line = pickRandom(WELCOME_LINES);
+  toast("Tangmo: " + line, 2400);
+  await speakText(line);
+}
+
+// =======================
+// BOOT
+// =======================
+
+(function boot() {
+  buildCards();
+  buildTrends();
+  setBg(SERVICE_DATA.design.bg);
+  initVoice();
+  initUpload();
+
+  // close chat when tapping outside (mobile friendly)
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeChat();
+  });
+})();
