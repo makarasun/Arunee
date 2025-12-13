@@ -11,11 +11,11 @@ export default async function handler(req, res) {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "gpt-4o-mini-tts",
-      voice: "alloy",
-      format: "mp3",
-      input
-    })
+  model: "gpt-4o-mini-tts",
+  voice: "verse",
+  format: "mp3",
+  input
+})
   });
 
   const buf = Buffer.from(await r.arrayBuffer());
