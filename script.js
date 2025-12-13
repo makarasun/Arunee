@@ -145,7 +145,7 @@ async function safeImageExists(url) {
     }, 380);
   }
 
-  skip?.addEventListener("click", finishIntro);
+  skip?.addEventListener("click", () => { _audioUnlocked = true; finishIntro(); });
   // auto finish after 1.9s
   window.setTimeout(finishIntro, 1900);
 })();
@@ -166,18 +166,28 @@ function setBg(src) {
 // CARDS (free scroll + out-focus by distance)
 // =======================
 
+/* =======================
+   3D CAROUSEL (vertical cards in a ring)
+   ======================= */
+
+let _carouselAngle = 0; // degrees
+let _carouselDragging = false;
+let _carouselLastX = 0;
+let _carouselVelocity = 0;
+
 function buildCards() {
-  const wrap = $("#cards");
-  if (!wrap) return;
+  // keep function name buildCards (boot already calls it) but implement 3D carousel
+  const track = $("#carouselTrack");
+  if (!track) return;
 
   const order = ["design", "curtain", "wall", "floor", "install", "aftercar"];
-  wrap.innerHTML = "";
+  track.innerHTML = "";
 
   order.forEach((key) => {
     const d = SERVICE_DATA[key];
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "card";
+    btn.className = "card3d";
     btn.setAttribute("role", "listitem");
     btn.dataset.key = key;
     btn.innerHTML = `
@@ -187,50 +197,111 @@ function buildCards() {
       <div class="card-title">${d.title}</div>
       <div class="card-desc">${d.desc}</div>
     `;
-    btn.addEventListener("click", () => selectService(key, true));
-    wrap.appendChild(btn);
+    btn.addEventListener("click", () => {
+      // snap this card to front
+      snapCardToFront(key);
+      selectService(key, true);
+    });
+    track.appendChild(btn);
   });
 
   // initial
   selectService("design", false);
-  // compute focus continuously
-  const onTick = () => {
-    applyCardFocus(wrap);
-    requestAnimationFrame(onTick);
+
+  // drag/swipe to rotate
+  const onDown = (e) => {
+    _carouselDragging = true;
+    _carouselLastX = e.clientX;
+    _carouselVelocity = 0;
+    track.setPointerCapture?.(e.pointerId);
   };
-  requestAnimationFrame(onTick);
+  const onMove = (e) => {
+    if (!_carouselDragging) return;
+    const dx = e.clientX - _carouselLastX;
+    _carouselLastX = e.clientX;
+    const delta = dx * 0.35; // sensitivity (deg per px)
+    _carouselAngle += delta;
+    _carouselVelocity = delta;
+  };
+  const onUp = (e) => {
+    _carouselDragging = false;
+    track.releasePointerCapture?.(e.pointerId);
+  };
+
+  track.addEventListener("pointerdown", onDown);
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+
+  // animation loop
+  const tick = () => {
+    // inertia
+    if (!_carouselDragging) {
+      _carouselAngle += _carouselVelocity;
+      _carouselVelocity *= 0.92;
+      if (Math.abs(_carouselVelocity) < 0.001) _carouselVelocity = 0;
+    }
+    layoutCarousel(track);
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
 }
 
-function applyCardFocus(wrap) {
-  const cards = Array.from(wrap.querySelectorAll(".card"));
+function layoutCarousel(track) {
+  const cards = Array.from(track.querySelectorAll(".card3d"));
   if (!cards.length) return;
 
-  const rect = wrap.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
+  const n = cards.length;
+  const step = 360 / n;
+  const radius = 240; // ring radius (px)
 
-  cards.forEach((el) => {
-    const r = el.getBoundingClientRect();
-    const x = r.left + r.width / 2;
-    const dist = Math.abs(x - cx);
-    const t = clamp(dist / (rect.width * 0.55), 0, 1);
-    const blur = 6 * t;
-    const scale = 1 - 0.06 * t;
-    const opacity = 1 - 0.28 * t;
-    el.style.filter = `blur(${blur.toFixed(2)}px)`;
-    el.style.transform = `translateY(${(t * 4).toFixed(2)}px) scale(${scale.toFixed(3)})`;
+  cards.forEach((el, i) => {
+    const base = i * step;
+    const a = base + _carouselAngle;
+    // normalize to [-180, 180] for "frontness"
+    let norm = ((a % 360) + 360) % 360;
+    if (norm > 180) norm -= 360;
+
+    const front = Math.cos((norm * Math.PI) / 180); // 1 front, -1 back
+    const t = clamp((1 - front) / 2, 0, 1); // 0 front, 1 back
+
+    const blur = 8 * t;
+    const scale = 1 - 0.14 * t;
+    const opacity = 1 - 0.55 * t;
+
     el.style.opacity = opacity.toFixed(3);
+    el.style.filter = `blur(${blur.toFixed(2)}px)`;
+    el.style.transform = `
+      translate(-50%, -50%)
+      rotateY(${a}deg)
+      translateZ(${radius}px)
+      rotateY(${-a}deg)
+      scale(${scale.toFixed(3)})
+    `;
+
+    // z-index: front higher
+    const z = Math.round((front + 1) * 1000);
+    el.style.zIndex = String(z);
   });
 
-  // pick the closest to center as "active" (visual only)
-  let best = { el: null, dist: Infinity };
-  cards.forEach((el) => {
-    const r = el.getBoundingClientRect();
-    const x = r.left + r.width / 2;
-    const dist = Math.abs(x - cx);
-    if (dist < best.dist) best = { el, dist };
-  });
-  cards.forEach((el) => el.classList.toggle("is-front", el === best.el));
+  // active style
+  const activeKey = document.body.dataset.activeService;
+  cards.forEach((el) => el.classList.toggle("is-active", el.dataset.key === activeKey));
 }
+
+function snapCardToFront(key) {
+  const track = $("#carouselTrack");
+  if (!track) return;
+  const cards = Array.from(track.querySelectorAll(".card3d"));
+  const idx = cards.findIndex((c) => c.dataset.key === key);
+  if (idx < 0) return;
+
+  const n = cards.length;
+  const step = 360 / n;
+  // we want idx*step + angle == 0  (front)
+  _carouselAngle = -idx * step;
+  _carouselVelocity = 0;
+}
+
 
 // =======================
 // VIEWER + THUMBS
@@ -400,57 +471,24 @@ async function speakText(text) {
       state.speaking = false;
       setMicState(state);
     };
-  } catch {
-    state.speaking = false;
-    setMicState(state);
-  }
-}
-
-async function askTangmo(userText, extra = {}) {
-  if (!userText || !userText.trim()) return;
-
-  pushMessage("user", userText.trim());
-  openChat();
-
-  state.thinking = true;
+  } catch (e) {
+  window.clearTimeout(t);
+  state.thinking = false;
   setMicState(state);
 
-  // IMPORTANT: no fake "คิดแปบ" text. just a toast.
-  toast("Tangmo กำลังตอบ…");
+  console.error("[Tangmo] /api/chat error:", e);
 
-  const controller = new AbortController();
-  const t = window.setTimeout(() => controller.abort(), 22000);
+  // Don't spam the same apology every time.
+  const errCount = Number(sessionStorage.getItem("tangmo_err_count") || "0") + 1;
+  sessionStorage.setItem("tangmo_err_count", String(errCount));
 
-  try {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: state.messages, ...extra }),
-      signal: controller.signal,
-    });
-    window.clearTimeout(t);
-
-    if (!res.ok) {
-      throw new Error(`chat failed (${res.status})`);
-    }
-
-    const data = await res.json();
-    const reply = (data?.text || data?.message || "").trim();
-    if (!reply) throw new Error("empty reply");
-
-    pushMessage("assistant", reply);
-    state.thinking = false;
-    setMicState(state);
-    await speakText(reply);
-  } catch {
-    window.clearTimeout(t);
-    state.thinking = false;
-    setMicState(state);
-    pushMessage(
-      "assistant",
-      "ขอโทษนะคะ ตอนนี้ระบบตอบแชทมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ"
-    );
-    await speakText("ขอโทษนะคะ ตอนนี้ระบบตอบแชทมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ");
+  if (errCount === 1) {
+    const msg = "ขอโทษนะคะ ตอนนี้ระบบตอบกลับมีปัญหานิดนึง ลองใหม่อีกทีได้ไหมคะ";
+    pushMessage("assistant", msg);
+    // (ไม่ TTS ใน error เพื่อไม่ให้รู้สึกรบกวน)
+  } else {
+    // show a tiny hint without being annoying
+    toast("ยังเชื่อมต่อไม่ติด ลองใหม่อีกทีนะคะ", 1800);
   }
 }
 
@@ -567,12 +605,33 @@ function initUpload() {
 // =======================
 
 let _welcomeQueued = false;
-async function queueWelcome() {
+async let _welcomeQueued = false;
+let _pendingWelcomeLine = null;
+let _audioUnlocked = false;
+
+function queueWelcome() {
   if (_welcomeQueued) return;
   _welcomeQueued = true;
+
   const line = pickRandom(WELCOME_LINES);
+  _pendingWelcomeLine = line;
+
+  // show as a small toast always
   toast("Tangmo: " + line, 2400);
-  await speakText(line);
+
+  // If user already interacted (skip button), try speak now; otherwise wait for first touch.
+  if (_audioUnlocked) {
+    speakText(line);
+    _pendingWelcomeLine = null;
+    return;
+  }
+
+  const onceUnlock = () => {
+    _audioUnlocked = true;
+    if (_pendingWelcomeLine) speakText(_pendingWelcomeLine);
+    _pendingWelcomeLine = null;
+  };
+  window.addEventListener("pointerdown", onceUnlock, { once: true });
 }
 
 // =======================
