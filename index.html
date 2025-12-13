@@ -1,162 +1,139 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
   <head>
     <meta charset="utf-8" />
-    <title>อรุณี ผ้าม่าน – บริการตกแต่งภายในครบวงจร</title>
+    <title>อรุณี บริการ — ตกแต่งภายในครบวงจร</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f2f4f7" />
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body class="is-intro-playing">
-    <!-- Background: blur image that changes by selected card -->
+    <!-- BG layer (เปลี่ยนภาพตามการ์ด) -->
     <div id="bg-layer" aria-hidden="true">
       <img id="bg-image" alt="" />
       <div class="bg-vignette"></div>
       <div class="bg-grain"></div>
     </div>
 
-    <!-- Intro overlay (video optional) -->
-    <section id="intro" class="intro" role="dialog" aria-label="Intro">
+    <!-- INTRO CARD -->
+    <section id="intro" class="intro" role="dialog" aria-modal="true" aria-label="Intro">
       <div class="intro-card">
         <div class="intro-logo">AP</div>
         <div class="intro-title">อรุณี บริการ</div>
-        <div class="intro-sub">บริการตกแต่งภายในครบวงจร</div>
-        <button id="skipIntro" class="btn btn-ghost" type="button">ข้าม</button>
+        <div class="intro-sub">บริการตกแต่งภายในครบวงจร (ไม่ใช่แค่ผ้าม่าน)</div>
+        <button id="intro-skip" class="btn btn-primary" type="button">เริ่มเลย</button>
+        <button id="intro-skip-ghost" class="btn btn-ghost" type="button">ข้าม</button>
       </div>
     </section>
 
-    <!-- Tangmo Dock (fixed, replaces old header/search) -->
-    <header class="dock" role="banner">
-      <div class="dock-inner">
+    <!-- TOP DOCK (แทนกรอบแดง) -->
+    <header class="dock" id="dock">
+      <div class="dock-inner neumo">
         <div class="dock-left">
-          <div class="neo-switch" title="เปิด/ปิดเสียง">
-            <input id="voiceToggle" type="checkbox" checked />
-            <span class="neo-switch-ui" aria-hidden="true"></span>
-          </div>
+          <div class="dock-title">Tangmo</div>
+          <div class="dock-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
         </div>
 
         <div class="dock-center">
-          <button id="micBtn" class="mic" type="button" aria-label="คุยกับ Tangmo">
-            <span class="mic-ring" aria-hidden="true"></span>
-            <span class="mic-core" aria-hidden="true"></span>
+          <button id="micBtn" class="mic-btn" type="button" aria-label="ไมค์">
+            <span class="mic-core"></span>
           </button>
-          <div class="mic-label">
-            <div class="mic-name">Tangmo</div>
-            <div class="mic-sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
-          </div>
+          <div id="micHint" class="mic-hint">แตะเพื่อพูด • แตะอีกทีเพื่อหยุด</div>
         </div>
 
         <div class="dock-right">
-          <label class="upload-btn" for="imageInput" title="ส่งรูปหน้างาน">
-            <input id="imageInput" type="file" accept="image/*" />
-            <span aria-hidden="true">＋</span>
+          <label class="toggle neumo-inset" title="เปิด/ปิดเสียงพูด">
+            <input id="voiceToggle" type="checkbox" checked />
+            <span class="toggle-ui"></span>
+            <span class="toggle-text">เสียง</span>
+          </label>
+
+          <label class="upload-btn neumo" title="อัปโหลดรูปหน้างาน">
+            <input id="imgInput" type="file" accept="image/*" />
+            <span>📷 รูป</span>
           </label>
         </div>
       </div>
     </header>
 
-    <main class="page">
-      <!-- TOP / RED AREA (replaced with Tangmo dock). Now: small hero -->
-      <section class="hero" aria-label="สรุปร้าน">
-        <div class="hero-card">
-          <h1>ตกแต่งภายในครบวงจร</h1>
-          <p>
-            ถึงชื่อร้านจะมีคำว่า “ผ้าม่าน” แต่เราดูแลงานตกแต่งภายในได้ครบตั้งแต่แบบ–เลือกวัสดุ–ติดตั้ง
-            เหมาะทั้งบ้านพักอาศัย และหน่วยงาน/องค์กรค่ะ
-          </p>
-          <div class="hero-chips">
-            <span class="chip">บ้านพักอาศัย</span>
-            <span class="chip">หน่วยงานราชการ</span>
-            <span class="chip">องค์กร/โรงพยาบาล</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- CAROUSEL MENU -->
-      <section class="section" aria-label="เมนูบริการ">
-        <div class="section-head">
-          <h2>เลือกหมวดงาน</h2>
-          <p>ปัดซ้าย–ขวาได้อิสระ แตะเพื่อเปิดรายละเอียด และเปลี่ยนภาพพื้นหลังแบบเบลอ</p>
-        </div>
-
-        <div class="carousel3d" aria-label="เมนูแบบวงกลม">
-          <div id="carouselTrack" class="carouselTrack" role="list" aria-label="การ์ดเมนู">
-            <!-- populated by JS -->
-          </div>
-        </div>
-      </section>
-
-      <!-- BLUE: Portfolio Viewer (linked to selected card) -->
-      <section class="section" aria-label="ผลงาน">
-        <div class="viewer" id="viewer">
-          <div class="viewer-head">
-            <span id="viewerTag" class="pill">หมวดงาน</span>
-            <h3 id="viewerTitle">—</h3>
-            <p id="viewerDesc">—</p>
-          </div>
-
-          <div class="viewer-main" id="viewerMain">
-            <div id="viewerPlaceholder" class="viewer-placeholder">
-              เลือกหมวดงานด้านบนเพื่อดูตัวอย่างผลงาน
-            </div>
-            <img id="viewerImage" class="viewer-img" alt="" />
-          </div>
-        </div>
-      </section>
-
-      <!-- GREEN: Thumbnails row -->
-      <section class="section" aria-label="ตัวอย่างเพิ่มเติม">
-        <div class="thumbs-wrap">
-          <div class="thumbs-title">ตัวอย่างผลงาน (ปัดซ้าย–ขวา)</div>
-          <div id="thumbs" class="thumbs" role="list" aria-label="thumbnail"></div>
-        </div>
-      </section>
-
-      <!-- PINK: Trending tones -->
-      <section class="section" aria-label="โทนสีที่กำลังนิยม">
-        <div class="section-head">
-          <h2>โทนสี/วัสดุที่กำลังนิยม</h2>
-          <p>ใส่เป็นไอเดียให้ลูกค้าเลือก mood &amp; tone ได้ไวขึ้น (อัปเดตได้เรื่อย ๆ)</p>
-        </div>
-
-        <div id="trendGrid" class="trend-grid" aria-label="trend"></div>
-      </section>
-
-      <!-- Contact (keep simple) -->
-      <section class="section" aria-label="ติดต่อร้าน">
-        <div class="contact">
-          <h2>ติดต่อร้าน</h2>
-          <div class="contact-grid">
-            <div class="contact-card">
-              <div class="contact-label">โทรศัพท์</div>
-              <div class="contact-value">(ใส่เบอร์ร้านตรงนี้)</div>
-            </div>
-            <div class="contact-card">
-              <div class="contact-label">LINE OA</div>
-              <div class="contact-value">(ใส่ไอดี/ลิงก์ตรงนี้)</div>
-            </div>
-            <div class="contact-card">
-              <div class="contact-label">พื้นที่บริการ</div>
-              <div class="contact-value">เชียงคำ – พะเยา – ภาคเหนือตอนบน</div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Tiny toast for status (no "คิดแปบ" spam) -->
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-    <!-- Hidden chat log (optional) -->
-    <section id="chat" class="chat" aria-label="แชท" hidden>
-      <div class="chat-head">
-        <div class="chat-title">บันทึกการคุยกับ Tangmo</div>
-        <button id="chatClose" class="btn btn-ghost" type="button">ปิด</button>
+    <!-- (ซ่อนไว้ก่อน) CHAT PANEL -->
+    <section class="chat neumo" id="chatPanel" aria-label="Tangmo chat">
+      <div class="chat-header">
+        <div class="chat-title">Tangmo</div>
+        <button id="chatClose" class="chat-close" type="button">ปิด</button>
       </div>
       <div id="chatLog" class="chat-log"></div>
     </section>
 
-    <script src="script.js" defer></script>
+    <!-- CONTENT -->
+    <main class="page">
+      <!-- CAROUSEL MENU (การ์ด 6 ใบ) -->
+      <section class="hero">
+        <div class="hero-card neumo reveal">
+          <h1 class="hero-title">ตกแต่งภายในครบวงจร</h1>
+          <p class="hero-sub">
+            เลือกหมวดงานจากการ์ดด้านล่าง แล้วดูตัวอย่างผลงาน/แนวทางได้ทันที
+          </p>
+          <div class="hero-pills">
+            <span class="pill neumo">บ้านพักอาศัย</span>
+            <span class="pill neumo">หน่วยงานราชการ</span>
+            <span class="pill neumo">องค์กรขนาดกลาง</span>
+          </div>
+        </div>
+
+        <div class="carousel-wrap reveal">
+          <div class="carousel" id="carousel" aria-label="Service carousel">
+            <!-- JS will inject cards -->
+          </div>
+          <div class="carousel-dots" id="dots"></div>
+        </div>
+      </section>
+
+      <!-- VIEWER (กรอบสีน้ำเงิน) -->
+      <section class="viewer reveal" id="viewer">
+        <div class="viewer-card neumo">
+          <div class="viewer-head">
+            <span id="viewerTag" class="viewer-tag neumo">หมวดงาน</span>
+            <h2 id="viewerTitle" class="viewer-title">เลือกการ์ดด้านบน</h2>
+            <p id="viewerDesc" class="viewer-desc">ระบบจะเปลี่ยนข้อมูลและภาพพื้นหลังให้อัตโนมัติ</p>
+          </div>
+
+          <div class="viewer-media neumo-inset">
+            <img id="viewerMainImg" class="viewer-mainimg" alt="" />
+            <div id="viewerEmpty" class="viewer-empty">ยังไม่มีรูปตัวอย่าง (เดี๋ยวใส่ทีหลังได้)</div>
+          </div>
+
+          <!-- THUMBS (กรอบสีเขียว) -->
+          <div class="thumbs" id="thumbs" aria-label="Thumbnails"></div>
+        </div>
+      </section>
+
+      <!-- TREND COLORS (กรอบชมพู) -->
+      <section class="trend reveal" id="trend">
+        <div class="trend-card neumo">
+          <h2 class="trend-title">โทนสี/ผิววัสดุที่กำลังนิยม</h2>
+          <p class="trend-sub">ไว้ใส่จริงทีหลังได้ — ตอนนี้เป็น placeholder ให้ลูกค้าเห็นภาพ</p>
+          <div class="swatches">
+            <div class="swatch neumo"><span></span><b>Warm White</b><small>#F6F7FB</small></div>
+            <div class="swatch neumo"><span></span><b>Stone Gray</b><small>#C9CED8</small></div>
+            <div class="swatch neumo"><span></span><b>Charcoal</b><small>#2B2F36</small></div>
+            <div class="swatch neumo"><span></span><b>Accent Rose</b><small>#FB7185</small></div>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer reveal">
+        <div class="footer-card neumo">
+          <div>
+            <b>ติดต่อร้าน</b><br />
+            โทร: (ใส่เบอร์ด้านล่างของเว็บได้เลย)<br />
+            LINE OA: (ใส่ลิงก์/QR ทีหลัง)
+          </div>
+          <div class="foot-note">© อรุณี บริการ</div>
+        </div>
+      </footer>
+    </main>
+
+    <script src="script.js"></script>
   </body>
 </html>
