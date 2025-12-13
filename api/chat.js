@@ -22,9 +22,16 @@ const SYSTEM_PROMPT = `
 การเรียกแทนลูกค้า (ฮาแบบพอดี):
 - ลูกค้าหญิงมีอายุ: “คุณพี่/คุณแม่/คุณนาย” (ถ้าบรรยากาศขำ ๆ ค่อยใช้ “ป้า/เจ๊”)
 - ลูกค้าชาย: “เฮีย/น้า/ลุง” (ถ้าอ้อน ๆ เรียก “ป๋าขา” ได้)
-`.trim();
+`;
 
-function sendJson(res, status, data) {
+function cleanKey(raw) {
+  return String(raw || "")
+    .trim()
+    .replace(/^["']+|["']+$/g, "")  // ตัด " หรือ ' ที่ครอบอยู่
+    .replace(/\\+/g, "");          // ตัด backslash ที่หลุดมา
+}
+
+function json(res, status, data) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(data));
@@ -33,26 +40,31 @@ function sendJson(res, status, data) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return sendJson(res, 405, { error: "Method not allowed" });
+    return json(res, 405, { error: "Method not allowed" });
+  }
+
+  const apiKey = cleanKey(process.env.OPENAI_API_KEY);
+  if (!apiKey || !apiKey.startsWith("sk-")) {
+    return json(res, 500, {
+      error: "OPENAI_API_KEY ไม่ถูกต้อง (ดูเหมือนมี \\ หรือ \" หรือว่างอยู่) — ให้ paste แบบไม่มีเครื่องหมายใด ๆ ครอบ"
+    });
   }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
-    const messages = Array.isArray(body.messages) ? body.messages : [];
-    const imageDataUrl = body.image || null;
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const messages = Array.isArray(body?.messages) ? body.messages : [];
+    const imageDataUrl = body?.image || null;
 
     const input = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SYSTEM_PROMPT.trim() },
       ...messages,
     ];
 
-    // ถ้ามีรูป: ส่งแบบ multimodal
     if (imageDataUrl) {
-      const lastText = (messages?.at(-1)?.content || "ช่วยดูรูปหน้างานนี้ให้หน่อย");
       input.push({
         role: "user",
         content: [
-          { type: "input_text", text: lastText },
+          { type: "input_text", text: messages?.at(-1)?.content || "ช่วยดูรูปหน้างานนี้ให้หน่อย" },
           { type: "input_image", image_url: imageDataUrl },
         ],
       });
@@ -62,21 +74,24 @@ export default async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || "gpt-4o-mini",
         input,
+        max_output_tokens: 520,
         temperature: 0.7,
-        max_output_tokens: 500,
       }),
     });
 
-    const data = await r.json();
-    if (!r.ok) return sendJson(res, r.status, { error: data?.error || data });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      return json(res, r.status, { error: data?.error || data });
+    }
 
-    return sendJson(res, 200, { text: (data?.output_text || "").trim() });
+    const text = (data?.output_text || "").trim();
+    return json(res, 200, { text });
   } catch (e) {
-    return sendJson(res, 500, { error: String(e?.message || e) });
+    return json(res, 500, { error: String(e?.message || e) });
   }
 }
