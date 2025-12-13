@@ -1,11 +1,4 @@
-// Vercel Serverless Function: /api/chat
-// - Uses OpenAI Responses API style via fetch
-// - Short memory (in-request messages only)
-// - Fast defaults (lower max output, no filler)
-
-export const config = {
-  runtime: "nodejs",
-};
+export const config = { runtime: "nodejs" };
 
 const SYSTEM_PROMPT = `
 คุณคือ “Tangmo” ผู้ช่วยพนักงานหน้าร้านของร้านอรุณีผ้าม่าน
@@ -29,13 +22,9 @@ const SYSTEM_PROMPT = `
 การเรียกแทนลูกค้า (ฮาแบบพอดี):
 - ลูกค้าหญิงมีอายุ: “คุณพี่/คุณแม่/คุณนาย” (ถ้าบรรยากาศขำ ๆ ค่อยใช้ “ป้า/เจ๊”)
 - ลูกค้าชาย: “เฮีย/น้า/ลุง” (ถ้าอ้อน ๆ เรียก “ป๋าขา” ได้)
+`.trim();
 
-การชวนติดต่อ:
-- กล่าวเมื่อเหมาะสมเท่านั้น และพูดแบบให้ข้อมูล เช่น
-  “ถ้าวันไหนอยากคุยรายละเอียดเพิ่ม หรือนัดดูหน้างาน โทรเบอร์ด้านล่าง หรือแอด LINE ของร้านได้เลยนะคะ”
-`;
-
-function json(res, status, data) {
+function sendJson(res, status, data) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(JSON.stringify(data));
@@ -44,27 +33,26 @@ function json(res, status, data) {
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return json(res, 405, { error: "Method not allowed" });
+    return sendJson(res, 405, { error: "Method not allowed" });
   }
 
   try {
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
-    const messages = Array.isArray(body?.messages) ? body.messages : [];
-
-    // Optional image support: allow user to pass {image: 'data:image/...'} in the last user message
-    const imageDataUrl = body?.image || null;
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const imageDataUrl = body.image || null;
 
     const input = [
-      { role: "system", content: SYSTEM_PROMPT.trim() },
+      { role: "system", content: SYSTEM_PROMPT },
       ...messages,
     ];
 
-    // If image is included, append a final user message that contains both text + image (vision)
+    // ถ้ามีรูป: ส่งแบบ multimodal
     if (imageDataUrl) {
+      const lastText = (messages?.at(-1)?.content || "ช่วยดูรูปหน้างานนี้ให้หน่อย");
       input.push({
         role: "user",
         content: [
-          { type: "input_text", text: messages?.at(-1)?.content || "ช่วยดูรูปหน้างานนี้ให้หน่อย" },
+          { type: "input_text", text: lastText },
           { type: "input_image", image_url: imageDataUrl },
         ],
       });
@@ -79,19 +67,16 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || "gpt-4o-mini",
         input,
-        max_output_tokens: 500,
         temperature: 0.7,
+        max_output_tokens: 500,
       }),
     });
 
     const data = await r.json();
-    if (!r.ok) {
-      return json(res, r.status, { error: data?.error || data });
-    }
+    if (!r.ok) return sendJson(res, r.status, { error: data?.error || data });
 
-    const text = (data?.output_text || "").trim();
-    return json(res, 200, { text });
+    return sendJson(res, 200, { text: (data?.output_text || "").trim() });
   } catch (e) {
-    return json(res, 500, { error: String(e?.message || e) });
+    return sendJson(res, 500, { error: String(e?.message || e) });
   }
 }
