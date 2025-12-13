@@ -1,462 +1,377 @@
-/* =========================
-   Tangmo Neumo v1 (Vercel)
-   - intro card กดแล้วไปแน่นอน
-   - ไมค์: แตะเพื่อเริ่ม / แตะอีกทีเพื่อหยุด
-   - ไม่มีคำว่า "คิดแปบ"
-   - random ประโยคต้อนรับ (แสดงข้อความทันที / เสียงจะพูดได้หลัง user แตะครั้งแรกเพราะ policy browser)
-========================= */
+/* =========================================================
+   Tangmo Neumo v3 (stable)
+   - Intro skip always works
+   - Random greeting after intro (1 time)
+   - Mic toggle: tap to start / tap to stop (SpeechRecognition)
+   - Calls /api/chat and /api/tts
+   - Better error handling (no repeating “ระบบมีปัญหา” spam)
+========================================================= */
 
-const OPENING_LINES = [
-  "สวัสดีค่ะ ที่นี่อรุณีบริการนะคะ ถึงชื่อจะเป็นผ้าม่าน แต่จริงๆ รับตกแต่งภายในครบวงจรค่ะ เดินดูเว็บได้สบายๆ นะคะ",
-  "สวัสดีค่ะ ยินดีต้อนรับค่ะ ร้านอรุณีรับงานตกแต่งภายในหลายแบบ ไม่ได้มีแค่ผ้าม่านอย่างเดียวค่ะ",
-  "สวัสดีค่ะ แวะดูผลงานได้เลยนะคะ ถ้าต้องการให้ช่วยแนะนำหมวดงาน ทักแตงโมได้ค่ะ",
-];
+const $ = (q) => document.querySelector(q);
 
-const SERVICES = [
-  {
-    key: "design",
-    badge: "01",
-    title: "งานออกแบบ",
-    desc: "Mood & Tone, คุมโทนให้ห้องดูแพงและเป็นตัวคุณ",
-    bg: "assets/bg/wall-BG1.jpg",
-    tag: "งานออกแบบ",
-    viewerTitle: "Mood & Tone ให้ลงตัว",
-    viewerDesc: "ช่วยจัดทิศทางสไตล์ วัสดุ และความรู้สึกของห้องให้ไปทางเดียวกัน",
-    thumbs: [],
-  },
-  {
-    key: "curtain",
-    badge: "02",
-    title: "งานผ้าม่าน",
-    desc: "ม่าน/มู่ลี่/ปรับแสง เลือกให้เหมาะกับแสงและการใช้งาน",
-    bg: "assets/bg/curtain-bg1.jpg",
-    tag: "งานผ้าม่าน",
-    viewerTitle: "เลือกกันแสง + ใช้งานจริง",
-    viewerDesc: "เลือกผ้า/ระบบราง ให้ทนแดด ดูแลง่าย และเข้ากับสไตล์บ้าน",
-    thumbs: [],
-  },
-  {
-    key: "wall",
-    badge: "03",
-    title: "งานผนัง",
-    desc: "สี/วอลเปเปอร์/ผิววัสดุ เพิ่มมิติให้ห้องแบบไม่เว่อร์",
-    bg: "assets/bg/wall-BG2.jpg",
-    tag: "งานผนัง",
-    viewerTitle: "ผนังที่ “มีมิติ”",
-    viewerDesc: "เปลี่ยนผนังให้ห้องดูมีราคา ด้วยวัสดุ/สีที่เหมาะกับพื้นที่",
-    thumbs: [],
-  },
-  {
-    key: "floor",
-    badge: "04",
-    title: "งานพื้น",
-    desc: "วินิล/กระเบื้องยาง/ลามิเนต เลือกให้เหมาะกับทราฟฟิก",
-    bg: "assets/bg/wall-BG1.jpg",
-    tag: "งานพื้น",
-    viewerTitle: "พื้นสวย + ทน",
-    viewerDesc: "เหมาะกับบ้านและหน่วยงาน เลือกแบบทน + ดูแลไม่ยาก",
-    thumbs: [],
-  },
-  {
-    key: "install",
-    badge: "05",
-    title: "งานติดตั้ง",
-    desc: "ทีมช่างเก็บงานเรียบร้อย มาตรฐานใช้งานจริง",
-    bg: "assets/bg/wall-BG2.jpg",
-    tag: "งานติดตั้ง",
-    viewerTitle: "ติดตั้งเนี๊ยบ",
-    viewerDesc: "งานติดตั้งที่ไม่ทิ้งงานไว้ให้ปวดหัวทีหลัง",
-    thumbs: [],
-  },
-  {
-    key: "aftercar",
-    badge: "06",
-    title: "บริการหลังการขาย",
-    desc: "ดูแลต่อเนื่อง ทำความสะอาด/ปรับตั้ง/แก้ไขจุกจิก",
-    bg: "assets/bg/wall-BG1.jpg",
-    tag: "บริการหลังการขาย",
-    viewerTitle: "ดูแลหลังจบงาน",
-    viewerDesc: "งานบ้าน/หน่วยงาน ก็ต้องการความชัวร์หลังติดตั้งเหมือนกันค่ะ",
-    thumbs: [],
-  },
-];
+const introEl = $("#intro");
+const introSkip = $("#intro-skip");
 
-const $ = (id) => document.getElementById(id);
+const micBtn = $("#micBtn");
+const ttsToggle = $("#ttsToggle");
+const imgInput = $("#imgInput");
 
-/* ---------- INTRO ---------- */
-(function initIntro(){
-  const intro = $("intro");
-  const skip1 = $("intro-skip");
-  const skip2 = $("intro-skip-ghost");
-  if(!intro || !skip1) return;
+const bgImg = $("#bg-image");
 
-  function finish(){
-    intro.classList.add("hidden");
-    document.body.classList.remove("is-intro-playing");
-    // หลัง intro: แสดง opening 1 ครั้ง
-    showOpeningOnce();
+const viewerTitle = $("#viewerTitle");
+const viewerDesc = $("#viewerDesc");
+const viewerImg = $("#viewerImg");
+const thumbsEl = $("#thumbs");
+
+const ring = $("#ring");
+const cards = Array.from(document.querySelectorAll(".card"));
+
+const chatEl = $("#chat");
+const chatLog = $("#chatLog");
+
+// ---- Gallery data (ใส่ของจริงทีหลังได้)
+const GALLERY = {
+  curtain: {
+    title: "ผ้าม่าน / มู่ลี่",
+    desc: "เหมาะบ้าน คอนโด สำนักงาน — เลือกผ้า/โทนตามแสงและการใช้งาน",
+    bg: "./curtain-bg1.jpg",
+    items: ["./curtain-bg1.jpg"]
+  },
+  wallpaper: {
+    title: "วอลเปเปอร์",
+    desc: "เพิ่มมิติให้ผนัง ทำให้ห้องดูแพงแบบไม่ต้องพูดเยอะ",
+    bg: "./wall-BG1.jpg",
+    items: ["./wall-BG1.jpg", "./wall-BG2.jpg"]
+  },
+  blind: {
+    title: "ม่านปรับแสง",
+    desc: "เรียบร้อย ดูแลง่าย เหมาะกับพื้นที่ต้องการความเป็นระเบียบ",
+    bg: "./wall-BG2.jpg",
+    items: ["./wall-BG2.jpg"]
+  },
+  floor: {
+    title: "พื้น / พรม",
+    desc: "ช่วยจัดโซน เพิ่มสัมผัส สบายเท้า และคุมโทนทั้งห้อง",
+    bg: "./wall-BG1.jpg",
+    items: ["./wall-BG1.jpg"]
+  },
+  fabric: {
+    title: "ผ้า / วัสดุ",
+    desc: "Texture + โทน ทำให้ mood ห้องมาไวแบบไม่ต้อง renovate",
+    bg: "./curtain-bg1.jpg",
+    items: ["./curtain-bg1.jpg"]
+  },
+  service: {
+    title: "ติดตั้ง / หน้างาน",
+    desc: "วัด-ติดตั้ง-เก็บงาน เน้นเรียบร้อย งานจบจริง",
+    bg: "./wall-BG2.jpg",
+    items: ["./wall-BG2.jpg"]
   }
+};
 
-  skip1.addEventListener("click", finish);
-  if(skip2) skip2.addEventListener("click", finish);
+let selectedKey = "curtain";
 
-  // กันเหนียว: ถ้า user งง ปล่อยไว้ 3 วิแล้วค่อยปล่อย scroll (แต่ไม่ปิด intro เอง)
-  setTimeout(()=>{ document.body.classList.remove("is-intro-playing"); }, 3000);
-})();
-
-/* ---------- Reveal on scroll ---------- */
-(function(){
-  const io = new IntersectionObserver((entries)=>{
-    for (const e of entries){
-      if(e.isIntersecting) e.target.classList.add("on");
-    }
-  }, {threshold: 0.08});
-  document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
-})();
-
-/* ---------- Background ---------- */
-function setBg(src){
-  const img = $("bg-image");
-  if(!img) return;
-  if(!src){
-    img.removeAttribute("src");
-    return;
-  }
-  img.src = src;
+// =========================================================
+// Intro
+// =========================================================
+function hideIntro() {
+  if (!introEl) return;
+  introEl.classList.add("hidden");
+  // หลังข้าม intro -> ให้ Tangmo พูดต้อนรับ 1 ครั้ง
+  sayOpeningOnce();
 }
 
-/* ---------- Carousel (vertical cards in circle feel) ---------- */
-let activeIndex = 0;
+if (introSkip) introSkip.addEventListener("click", hideIntro);
+// กันพลาด: แตะพื้นก็ข้ามได้ (ช่วยตอนปุ่มโดนอะไรกดไม่ติด)
+if (introEl) introEl.addEventListener("click", (e) => {
+  if (e.target === introEl) hideIntro();
+});
 
-function renderCarousel(){
-  const wrap = $("carousel");
-  const dots = $("dots");
-  if(!wrap) return;
+// =========================================================
+// Background sync with selected category
+// =========================================================
+function setBackground(src) {
+  if (!bgImg) return;
+  bgImg.src = src || "";
+}
 
-  wrap.innerHTML = "";
-  if(dots) dots.innerHTML = "";
+function renderViewer(key) {
+  const data = GALLERY[key] || GALLERY.curtain;
+  selectedKey = key;
 
-  SERVICES.forEach((s, i)=>{
-    const card = document.createElement("div");
-    card.className = "card3d";
-    card.dataset.index = String(i);
+  viewerTitle.textContent = data.title;
+  viewerDesc.textContent = data.desc;
 
-    card.innerHTML = `
-      <div class="card-top">
-        <div class="badge">${s.badge}</div>
-        <div class="icon-dot"></div>
-      </div>
-      <h3>${s.title}</h3>
-      <p>${s.desc}</p>
-    `;
+  setBackground(data.bg);
 
-    card.addEventListener("click", ()=> setActive(i, true));
-    wrap.appendChild(card);
+  // main image
+  viewerImg.src = (data.items && data.items[0]) ? data.items[0] : data.bg;
 
-    if(dots){
-      const d = document.createElement("div");
-      d.className = "dot" + (i===activeIndex ? " on": "");
-      d.addEventListener("click", ()=> setActive(i, true));
-      dots.appendChild(d);
-    }
+  // thumbs
+  thumbsEl.innerHTML = "";
+  (data.items || []).forEach((src) => {
+    const b = document.createElement("button");
+    b.className = "thumb";
+    b.type = "button";
+    b.innerHTML = `<img alt="" src="${src}">`;
+    b.addEventListener("click", () => {
+      viewerImg.src = src;
+      setBackground(src);
+    });
+    thumbsEl.appendChild(b);
   });
-
-  layoutCarousel();
 }
 
-function layoutCarousel(){
-  const cards = Array.from(document.querySelectorAll(".card3d"));
+// =========================================================
+// 3D Ring Carousel (vertical cards)
+// =========================================================
+let rotY = 0;
+let dragging = false;
+let lastX = 0;
+
+function layoutRing() {
   const n = cards.length;
+  const radius = 290; // ความโค้งวงกลม (ปรับได้)
+  const step = 360 / n;
 
-  cards.forEach((card, i)=>{
-    const offset = i - activeIndex;
+  cards.forEach((card, i) => {
+    const a = (i * step + rotY) * (Math.PI / 180);
+    // zDepth + xShift ให้มันเป็นวงโค้งด้านหน้า
+    const z = Math.cos(a) * radius;
+    const x = Math.sin(a) * radius;
+    const scale = 0.72 + (z / radius) * 0.28; // ใกล้สุดใหญ่สุด
+    const blur = Math.max(0, 10 - (z / radius) * 10); // ใกล้สุด blur ต่ำ
+    const opacity = 0.35 + (z / radius) * 0.65;
 
-    // วางเหมือนหมุนเป็นวงกลม (fake 3D)
-    const angle = offset * 18;        // ยิ่งมากยิ่งโค้ง
-    const z = -Math.abs(offset) * 55; // ยิ่งห่างยิ่งถอยหลัง
-    const x = offset * 62;            // กระจายซ้าย-ขวา
-    const y = 0;
-    const scale = 1 - Math.min(Math.abs(offset)*0.08, 0.25);
+    card.style.transform = `translate(-50%,-50%) translate3d(${x}px,0,${z}px) scale(${scale})`;
+    card.style.filter = `blur(${blur * 0.55}px)`;
+    card.style.opacity = `${opacity}`;
+    card.style.zIndex = `${Math.round(1000 + z)}`;
+  });
+}
 
-    card.style.transform =
-      `translate(-50%, -50%) translate3d(${x}px, ${y}px, ${z}px) rotateY(${angle}deg) scale(${scale})`;
+function pickFrontCard() {
+  // การ์ดที่ z มากสุด = อยู่หน้าสุด
+  let best = cards[0];
+  let bestZ = -Infinity;
+  cards.forEach((c) => {
+    const m = c.style.transform.match(/translate3d\(([-\d.]+)px,0,([-\d.]+)px\)/);
+    if (!m) return;
+    const z = parseFloat(m[2]);
+    if (z > bestZ) { bestZ = z; best = c; }
+  });
+  return best;
+}
 
-    card.classList.toggle("active", offset === 0);
-    card.classList.toggle("dim", offset !== 0);
+function onDragStart(e) {
+  dragging = true;
+  lastX = (e.touches ? e.touches[0].clientX : e.clientX);
+}
+function onDragMove(e) {
+  if (!dragging) return;
+  const x = (e.touches ? e.touches[0].clientX : e.clientX);
+  const dx = x - lastX;
+  lastX = x;
+  rotY += dx * 0.35; // sensitivity
+  layoutRing();
+}
+function onDragEnd() {
+  dragging = false;
+
+  // หลังปล่อย ให้เลือกการ์ดหน้าสุด
+  const front = pickFrontCard();
+  if (front) {
+    const key = front.getAttribute("data-key");
+    if (key) renderViewer(key);
+  }
+}
+
+ring.addEventListener("mousedown", onDragStart);
+window.addEventListener("mousemove", onDragMove);
+window.addEventListener("mouseup", onDragEnd);
+
+ring.addEventListener("touchstart", onDragStart, { passive: true });
+window.addEventListener("touchmove", onDragMove, { passive: true });
+window.addEventListener("touchend", onDragEnd);
+
+cards.forEach((c) => {
+  c.addEventListener("click", () => {
+    const key = c.getAttribute("data-key");
+    if (key) renderViewer(key);
+  });
+});
+
+// init viewer + ring
+renderViewer(selectedKey);
+layoutRing();
+
+// =========================================================
+// Tangmo voice/chat
+// =========================================================
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+let listening = false;
+let lastErrorToastAt = 0;
+let lastOpeningSpoken = false;
+
+function toastOnce(msg) {
+  const now = Date.now();
+  if (now - lastErrorToastAt < 5000) return; // กัน spam
+  lastErrorToastAt = now;
+  console.warn(msg);
+  // (ยังไม่ทำ UI toast แยกให้รก เดี๋ยวเฟสหน้า)
+}
+
+function appendMsg(role, text) {
+  if (!chatLog) return;
+  const d = document.createElement("div");
+  d.className = `msg ${role === "user" ? "u" : "a"}`;
+  d.textContent = text;
+  chatLog.appendChild(d);
+}
+
+async function callChat(userText, imageDataUrl = null) {
+  const payload = {
+    messages: [{ role: "user", content: userText }],
+    image: imageDataUrl || null
+  };
+
+  const r = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   });
 
-  const dots = Array.from(document.querySelectorAll(".dot"));
-  dots.forEach((d, i)=> d.classList.toggle("on", i === activeIndex));
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.error?.message || data?.error || `chat error ${r.status}`);
+  return (data?.text || "").trim();
 }
 
-function setActive(i, userAction=false){
-  activeIndex = Math.max(0, Math.min(SERVICES.length-1, i));
-  layoutCarousel();
+async function callTTS(text) {
+  const r = await fetch("/api/tts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text })
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e?.error?.message || e?.error || `tts error ${r.status}`);
+  }
+  const blob = await r.blob();
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  return new Promise((resolve) => {
+    audio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+    audio.play().catch(() => resolve());
+  });
+}
 
-  const s = SERVICES[activeIndex];
-  setBg(s.bg);
-  setViewer(s);
+async function sayOpeningOnce() {
+  if (lastOpeningSpoken) return;
+  lastOpeningSpoken = true;
 
-  // ถ้าผู้ใช้เป็นคนแตะ เปลี่ยน BG แล้วโชว์ viewer แบบลื่นๆ
-  if(userAction){
-    document.getElementById("viewer")?.scrollIntoView({behavior:"smooth", block:"start"});
+  const lines = [
+    "สวัสดีค่ะ ที่นี่อรุณีผ้าม่านนะคะ จริง ๆ ทางร้านรับตกแต่งภายในครบวงจรเลยค่ะ เดินดูเว็บได้สบาย ๆ นะคะ",
+    "สวัสดีค่ะ ยินดีต้อนรับนะคะ ร้านอรุณีรับงานตกแต่งภายในหลายแบบ ไม่ได้มีแค่ผ้าม่านอย่างเดียวค่ะ",
+    "สวัสดีค่ะ เดินดูผลงานก่อนได้เลยนะคะ ถ้าอยากถามอะไรค่อยเรียกแตงโมได้ค่ะ"
+  ];
+  const pick = lines[Math.floor(Math.random() * lines.length)];
+
+  // แค่พูด ไม่ต้องไปถามโมเดล (กันช้า/กันค่าใช้จ่าย)
+  if (ttsToggle.checked) {
+    micBtn.classList.add("speaking");
+    await callTTS(pick).catch((e) => toastOnce(e.message));
+    micBtn.classList.remove("speaking");
   }
 }
 
-function enableSwipe(){
-  const wrap = $("carousel");
-  if(!wrap) return;
-  let startX = 0;
-  let down = false;
-
-  wrap.addEventListener("touchstart", (e)=>{
-    down = true;
-    startX = e.touches[0].clientX;
-  }, {passive:true});
-
-  wrap.addEventListener("touchmove", (e)=>{
-    if(!down) return;
-    const dx = e.touches[0].clientX - startX;
-    if(Math.abs(dx) > 40){
-      down = false;
-      if(dx < 0) setActive(activeIndex+1);
-      else setActive(activeIndex-1);
-    }
-  }, {passive:true});
-
-  wrap.addEventListener("touchend", ()=>{ down=false; }, {passive:true});
-}
-
-/* ---------- Viewer ---------- */
-function setViewer(s){
-  $("viewerTag").textContent = s.tag || "หมวดงาน";
-  $("viewerTitle").textContent = s.viewerTitle || s.title;
-  $("viewerDesc").textContent = s.viewerDesc || s.desc;
-
-  // thumbs (ยังว่างได้)
-  const thumbs = $("thumbs");
-  thumbs.innerHTML = "";
-  if(s.thumbs && s.thumbs.length){
-    s.thumbs.forEach((src)=>{
-      const t = document.createElement("div");
-      t.className = "thumb";
-      t.innerHTML = `<img src="${src}" alt="">`;
-      t.addEventListener("click", ()=> setMainImage(src));
-      thumbs.appendChild(t);
-    });
-    setMainImage(s.thumbs[0]);
-  }else{
-    setMainImage(null);
-  }
-}
-
-function setMainImage(src){
-  const img = $("viewerMainImg");
-  const empty = $("viewerEmpty");
-  if(!img || !empty) return;
-
-  if(src){
-    img.src = src;
-    img.style.display = "block";
-    empty.style.display = "none";
-  }else{
-    img.removeAttribute("src");
-    img.style.display = "none";
-    empty.style.display = "grid";
-  }
-}
-
-/* =========================
-   Tangmo Chat + Voice
-========================= */
-
-const chatPanel = $("chatPanel");
-const chatLog = $("chatLog");
-const chatClose = $("chatClose");
-const micBtn = $("micBtn");
-const voiceToggle = $("voiceToggle");
-const imgInput = $("imgInput");
-
-let recognition = null;
-let listening = false;
-let hasUserGesture = false;
-let pendingSpeakQueue = [];
-let lastImageDataUrl = null;
-
-function addBubble(text, who="ai"){
-  if(!chatLog) return;
-  const div = document.createElement("div");
-  div.className = "bubble " + (who === "me" ? "me" : "ai");
-  div.textContent = text;
-  chatLog.appendChild(div);
-  chatLog.scrollTop = chatLog.scrollHeight;
-}
-
-function showChat(){
-  if(chatPanel) chatPanel.classList.add("show");
-}
-function hideChat(){
-  if(chatPanel) chatPanel.classList.remove("show");
-}
-if(chatClose) chatClose.addEventListener("click", hideChat);
-
-function setMicState(state){
-  micBtn?.classList.remove("listening","thinking");
-  if(state === "listening") micBtn?.classList.add("listening");
-  if(state === "thinking") micBtn?.classList.add("thinking");
-}
-
-function showOpeningOnce(){
-  // โชว์แชทแบบเงียบๆ (ไม่บังคับ)
-  const line = OPENING_LINES[Math.floor(Math.random()*OPENING_LINES.length)];
-  showChat();
-  addBubble(line, "ai");
-
-  // เสียง: browser จะไม่ยอม autoplay ถ้า user ยังไม่แตะอะไร
-  speak(line);
-}
-
-async function speak(text){
-  if(!voiceToggle?.checked) return;
-
-  // ถ้ายังไม่มี user gesture → คิวไว้ก่อน
-  if(!hasUserGesture){
-    pendingSpeakQueue.push(text);
+function startRec() {
+  if (!SpeechRecognition) {
+    toastOnce("เครื่องนี้ไม่รองรับ SpeechRecognition (ลอง Chrome บน Android/desktop)");
     return;
   }
+  if (!rec) {
+    rec = new SpeechRecognition();
+    rec.lang = "th-TH";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
 
-  try{
-    const r = await fetch("/api/tts", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ text })
-    });
-    if(!r.ok) throw new Error("TTS failed");
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const audio = new Audio(url);
-    await audio.play().catch(()=>{});
-    audio.onended = ()=> URL.revokeObjectURL(url);
-  }catch(e){
-    // เงียบไว้ ไม่ต้องพูด “ระบบมีปัญหา” ซ้ำๆ
-    console.warn(e);
-  }
-}
+    rec.onresult = async (ev) => {
+      const text = ev.results?.[0]?.[0]?.transcript?.trim();
+      if (!text) return;
 
-function flushSpeakQueue(){
-  if(!pendingSpeakQueue.length) return;
-  const q = [...pendingSpeakQueue];
-  pendingSpeakQueue = [];
-  q.forEach(t=> speak(t));
-}
+      appendMsg("user", text);
 
-async function askTangmo(userText){
-  setMicState("thinking");
-  showChat();
-  addBubble(userText, "me");
+      try {
+        micBtn.classList.remove("listening");
+        micBtn.classList.add("speaking");
 
-  try{
-    const payload = {
-      messages: [
-        { role:"user", content: userText }
-      ]
+        const reply = await callChat(text);
+        appendMsg("assistant", reply);
+
+        if (ttsToggle.checked && reply) {
+          await callTTS(reply);
+        }
+      } catch (e) {
+        // อย่า spam ประโยคเดิม ๆ
+        toastOnce(e.message || String(e));
+      } finally {
+        micBtn.classList.remove("speaking");
+      }
     };
-    if(lastImageDataUrl) payload.image = lastImageDataUrl;
 
-    const r = await fetch("/api/chat", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await r.json().catch(()=> ({}));
-    if(!r.ok) throw new Error(data?.error?.message || data?.error || "chat failed");
-
-    const text = (data.text || "").trim();
-    if(text){
-      addBubble(text, "ai");
-      await speak(text);
-    }
-  }catch(e){
-    console.warn(e);
-    addBubble("ขอโทษนะคะ เมื่อกี้ระบบสะดุดนิดนึง ลองใหม่อีกทีได้ไหมคะ", "ai");
-  }finally{
-    setMicState(listening ? "listening" : "");
-    // ส่งรูปครั้งเดียวพอ (ไม่ล็อกไว้ยิงซ้ำ)
-    lastImageDataUrl = null;
-  }
-}
-
-/* ---------- Speech Recognition ---------- */
-function getRecognizer(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR) return null;
-  const rec = new SR();
-  rec.lang = "th-TH";
-  rec.interimResults = false;
-  rec.continuous = false;
-  return rec;
-}
-
-function startListening(){
-  hasUserGesture = true;
-  flushSpeakQueue();
-
-  if(!recognition){
-    recognition = getRecognizer();
-    if(!recognition){
-      addBubble("มือถือเครื่องนี้ไม่รองรับไมค์อัตโนมัติค่ะ (ลองพิมพ์แทนได้)","ai");
-      return;
-    }
-    recognition.onresult = async (e)=>{
-      const text = e.results?.[0]?.[0]?.transcript?.trim();
-      if(text) await askTangmo(text);
-    };
-    recognition.onerror = (e)=>{ console.warn("SR error", e); };
-    recognition.onend = ()=>{
+    rec.onerror = (e) => {
+      toastOnce(e?.error || "speech error");
+      micBtn.classList.remove("listening");
       listening = false;
-      setMicState("");
+    };
+
+    rec.onend = () => {
+      micBtn.classList.remove("listening");
+      listening = false;
     };
   }
 
   listening = true;
-  setMicState("listening");
-  try{ recognition.start(); }catch(_){}
+  micBtn.classList.add("listening");
+  rec.start();
 }
 
-function stopListening(){
+function stopRec() {
+  if (!rec) return;
+  try { rec.stop(); } catch {}
+  micBtn.classList.remove("listening");
   listening = false;
-  setMicState("");
-  try{ recognition?.stop(); }catch(_){}
 }
 
-/* mic toggle click */
-if(micBtn){
-  micBtn.addEventListener("click", ()=>{
-    hasUserGesture = true;
-    flushSpeakQueue();
+micBtn.addEventListener("click", async () => {
+  // tap to start/stop
+  if (!introEl.classList.contains("hidden")) hideIntro();
 
-    if(!listening) startListening();
-    else stopListening();
-  });
-}
+  if (listening) stopRec();
+  else startRec();
+});
 
-/* upload image */
-if(imgInput){
-  imgInput.addEventListener("change", ()=>{
-    const f = imgInput.files?.[0];
-    if(!f) return;
-    const reader = new FileReader();
-    reader.onload = ()=>{
-      lastImageDataUrl = String(reader.result || "");
-      showChat();
-      addBubble("รับรูปแล้วค่ะ เดี๋ยวแตงโมดูให้นะคะ (พิมพ์หรือกดไมค์ถามต่อได้เลย)", "ai");
-    };
-    reader.readAsDataURL(f);
-  });
-}
+imgInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-/* init */
-renderCarousel();
-enableSwipe();
-setActive(0);
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const dataUrl = String(reader.result || "");
+    appendMsg("user", "ส่งรูปหน้างานให้แตงโมดูค่ะ");
+
+    try {
+      micBtn.classList.add("speaking");
+      const reply = await callChat("ช่วยดูรูปหน้างานนี้ให้หน่อยค่ะ", dataUrl);
+      appendMsg("assistant", reply);
+      if (ttsToggle.checked && reply) await callTTS(reply);
+    } catch (err) {
+      toastOnce(err.message || String(err));
+    } finally {
+      micBtn.classList.remove("speaking");
+    }
+  };
+  reader.readAsDataURL(file);
+});
