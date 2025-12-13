@@ -1,44 +1,183 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>อรุณี บริการตกแต่งภายในครบวงจร</title>
-
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>อรุณี ผ้าม่าน – ตกแต่งภายในครบวงจร</title>
+  <meta name="description" content="ร้านอรุณีผ้าม่าน รับงานตกแต่งภายในครบวงจร บ้าน หน่วยงานราชการ และองค์กร" />
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
 
-  <!-- TOP BAR (hide/show ได้ทีหลัง) -->
-  <header class="top-bar">
-    <button class="menu-btn">☰</button>
-    <div class="brand-text">
-      อรุณี บริการ<br />
-      <small>บริการตกแต่งภายในครบวงจร</small>
+<body>
+  <!-- Top bar (minimal + auto-hide) -->
+  <header class="topbar" id="topbar">
+    <div class="topbar__left">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true"></div>
+        <div class="brand__text">
+          <div class="brand__title">อรุณี ผ้าม่าน</div>
+          <div class="brand__sub">ตกแต่งภายในครบวงจร</div>
+        </div>
+      </div>
     </div>
+
+    <nav class="topbar__right" aria-label="เมนู">
+      <a class="chip" href="#services">บริการ</a>
+      <a class="chip" href="#work">ผลงาน</a>
+      <a class="chip" href="#contact">ติดต่อ</a>
+      <a class="chip chip--accent" href="#contact">โทร / LINE</a>
+    </nav>
   </header>
 
-  <!-- AI MIC SECTION -->
-  <main class="ai-section">
-    <button id="tangmo-mic" class="mic idle"></button>
+  <!-- Hero -->
+  <main>
+    <section class="hero" id="home">
+      <div class="hero__inner">
+        <div class="hero__copy">
+          <h1 class="hero__title">ตกแต่งภายในครบวงจร</h1>
+          <p class="hero__lead">ชื่อร้านมีคำว่า “ผ้าม่าน” ก็จริง… แต่เราดูแลตั้งแต่งานออกแบบ ไปจนถึงติดตั้งและเก็บงานให้เรียบร้อยค่ะ</p>
 
-    <div class="mic-label">
-      <div class="name">Tangmo</div>
-      <div class="desc">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
-    </div>
+          <div class="hero__meta">
+            <div class="pill">บ้านพักอาศัย</div>
+            <div class="pill">หน่วยงานราชการ</div>
+            <div class="pill">องค์กรขนาดกลาง</div>
+          </div>
 
-    <div id="tangmo-status" class="status">
-      แตะไมค์เพื่อคุยกับ Tangmo
-    </div>
+          <div class="hero__cta">
+            <a class="btn btn--accent" href="#contact">ติดต่อร้าน</a>
+            <a class="btn" href="#services">ดูบริการ</a>
+          </div>
+
+          <div class="hero__note">
+            <span class="dot"></span>
+            <span>Tip: แตะปุ่มไมค์เพื่อคุยกับ Tangmo (เสียงผู้หญิง) ได้เลย</span>
+          </div>
+        </div>
+
+        <div class="hero__panel">
+          <!-- Tangmo dock (clean, neumorphism) -->
+          <section class="tangmo" id="tangmo">
+            <button class="mic idle" id="tangmo-mic" type="button" aria-label="แตะเพื่อคุยกับ Tangmo"></button>
+            <div class="tangmo__label">Tangmo</div>
+            <div class="tangmo__sub">ผู้ช่วยหน้าร้าน (เสียงผู้หญิง)</div>
+            <div class="tangmo__status" id="tangmo-status">แตะไมค์เพื่อคุยกับ Tangmo</div>
+
+            <!-- Drawer: tap handle to show -->
+            <div class="drawer" id="tangmo-drawer" aria-hidden="true">
+              <div class="drawer__handle" id="drawer-handle"></div>
+
+              <div class="drawer__row">
+                <input class="input" id="tangmo-text" placeholder="พิมพ์ถาม Tangmo (ทางเลือก)" />
+                <button class="btn btn--small" id="tangmo-send" type="button">ส่ง</button>
+              </div>
+
+              <div class="drawer__row drawer__row--between">
+                <label class="file">
+                  <input id="tangmo-image" type="file" accept="image/*" />
+                  <span>ส่งรูปหน้างาน</span>
+                </label>
+                <button class="btn btn--small" id="tangmo-clear" type="button">ล้างบทสนทนา</button>
+              </div>
+
+              <div class="chat" id="tangmo-chat" aria-label="บันทึกบทสนทนา"></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section class="section" id="services">
+      <div class="container">
+        <div class="section__head">
+          <h2 class="section__title">บริการของเรา</h2>
+          <p class="section__sub">แตะเลือกหมวดบริการ แล้วดูคำอธิบายแบบสั้น ๆ ตรงไปตรงมา</p>
+        </div>
+
+        <div class="services">
+          <div class="services__rail" id="service-rail"></div>
+
+          <article class="viewer" id="viewer">
+            <div class="viewer__tag" id="viewer-tag">บริการ</div>
+            <h3 class="viewer__title" id="viewer-title">เลือกหมวดบริการ</h3>
+            <p class="viewer__desc" id="viewer-desc">แตะการ์ดด้านซ้าย เพื่อดูรายละเอียดแบบเร็ว ๆ</p>
+
+            <div class="viewer__grid" id="viewer-grid"></div>
+
+            <div class="viewer__cta">
+              <a class="btn btn--accent" href="#contact">ถาม/นัดคุยรายละเอียด</a>
+              <a class="btn" href="#work">ดูผลงานจริง</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Work / Gallery -->
+    <section class="section" id="work">
+      <div class="container">
+        <div class="section__head">
+          <h2 class="section__title">ผลงานบางส่วน</h2>
+          <p class="section__sub">ใส่รูปจริง 6–12 รูปจะพรีเมียมสุด (ตอนนี้ใส่ placeholder ให้ก่อน)</p>
+        </div>
+
+        <div class="gallery" id="gallery">
+          <div class="gallery__item"></div>
+          <div class="gallery__item"></div>
+          <div class="gallery__item"></div>
+          <div class="gallery__item"></div>
+          <div class="gallery__item"></div>
+          <div class="gallery__item"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="section" id="contact">
+      <div class="container">
+        <div class="contact">
+          <div class="contact__left">
+            <h2 class="section__title">ติดต่อร้าน</h2>
+            <p class="section__sub">ถ้าจะคุยรายละเอียดเพิ่ม หรือนัดดูหน้างาน สามารถโทรหรือแอด LINE ได้เลยนะคะ</p>
+
+            <div class="contact__grid">
+              <div class="tile">
+                <div class="tile__title">โทรศัพท์</div>
+                <div class="tile__body"><a href="tel:0890000000">089-000-0000</a></div>
+                <div class="tile__hint">(แก้เบอร์ในไฟล์ index.html ได้)</div>
+              </div>
+              <div class="tile">
+                <div class="tile__title">LINE OA</div>
+                <div class="tile__body"><a href="#">@arunee</a></div>
+                <div class="tile__hint">(ใส่ลิงก์แอดไลน์จริงทีหลัง)</div>
+              </div>
+              <div class="tile">
+                <div class="tile__title">พื้นที่บริการ</div>
+                <div class="tile__body">เชียงคำ • พะเยา • ภาคเหนือตอนบน</div>
+                <div class="tile__hint">บ้าน / หน่วยงาน / องค์กร</div>
+              </div>
+            </div>
+
+            <div class="contact__cta">
+              <a class="btn btn--accent" href="tel:0890000000">โทรเลย</a>
+              <a class="btn" href="#">แอด LINE</a>
+            </div>
+          </div>
+
+          <div class="contact__right">
+            <div class="map">
+              <div class="map__placeholder">ฝัง Google Map ตรงนี้ได้ (ทีหลังค่อยใส่)</div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="footer">
+          <div>© <span id="y"></span> อรุณี ผ้าม่าน</div>
+          <div class="footer__muted">เว็บนี้ออกแบบให้ดูสะอาด โล่ง และคุยกับ Tangmo ได้บนมือถือเป็นหลัก</div>
+        </footer>
+      </div>
+    </section>
   </main>
-
-  <!-- CONTENT PLACEHOLDER -->
-  <section class="content">
-    <h2>บริการตกแต่งภายในครบวงจร</h2>
-    <p>เลื่อนลงเพื่อดูหมวดบริการและผลงานของทางร้าน</p>
-
-    <!-- ตรงนี้มึงเอา carousel เดิมมาใส่ต่อได้ -->
-  </section>
 
   <script src="script.js"></script>
 </body>
