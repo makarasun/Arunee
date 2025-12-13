@@ -1,44 +1,59 @@
+// Vercel Serverless Function: /api/tts
+// POST { text }
+// Returns audio/mpeg
+
+export const config = {
+  runtime: "nodejs",
+};
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
-
-  const { text } = req.body || {};
-  const input = String(text || "").slice(0, 2000);
-
-  // โทน B (สดใส/ขี้เล่น) — ลองตามลำดับนี้
-  const voices = ["shimmer", "nova", "aria", "verse", "alloy"];
-
-  let lastErr = null;
-
-  for (const voice of voices) {
-    try {
-      const r = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini-tts",
-          voice,
-          format: "mp3",
-          input,
-        }),
-      });
-
-      if (!r.ok) {
-        lastErr = await r.text();
-        continue;
-      }
-
-      const buf = Buffer.from(await r.arrayBuffer());
-      res.setHeader("Content-Type", "audio/mpeg");
-      res.setHeader("X-Tangmo-Voice", voice);
-      return res.status(200).send(buf);
-    } catch (e) {
-      lastErr = String(e);
-      continue;
-    }
+  if (req.method !== "POST") {
+    res.statusCode = 405;
+    res.setHeader("Allow", "POST");
+    return res.end("Method not allowed");
   }
 
-  return res.status(500).send(lastErr || "TTS failed");
+  try {
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    const text = String(body?.text || "").trim();
+    if (!text) {
+      res.statusCode = 400;
+      return res.end("Missing text");
+    }
+
+    // OpenAI TTS
+    const r = await fetch("https://api.openai.com/v1/audio/speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts",
+        voice: process.env.OPENAI_TTS_VOICE || "alloy", // เปลี่ยนเป็นเสียงผู้หญิงที่ถูกใจได้
+        format: "mp3",
+        speed: 1.05,
+        input: text,
+      }),
+    });
+
+    if (!r.ok) {
+      const err = await r.text();
+      res.statusCode = r.status;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      return res.end(JSON.stringify({ error: err }));
+    }
+
+    const arrayBuf = await r.arrayBuffer();
+    const buf = Buffer.from(arrayBuf);
+
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "audio/mpeg");
+    res.setHeader("Cache-Control", "no-store");
+    res.end(buf);
+  } catch (e) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(JSON.stringify({ error: String(e?.message || e) }));
+  }
 }
