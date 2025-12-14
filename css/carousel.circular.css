@@ -1,91 +1,111 @@
-/* ===================================================
-   CAROUSEL – CIRCULAR (VERTICAL)
-   Mobile-first tuning (single file)
-   =================================================== */
+/* ===============================
+   CAROUSEL – CIRCULAR (MOBILE TUNED)
+   Targets:  #ring.ring  and  .card
+   =============================== */
 
-/* เวที carousel */
+:root{
+  --carousel-card-w: 132px;
+  --carousel-card-h: 186px;
+  --carousel-radius: 170px; /* default, JS will use its own too */
+}
+
+@media (min-width: 420px){
+  :root{
+    --carousel-card-w: 150px;
+    --carousel-card-h: 210px;
+  }
+}
+
+/* container (ถ้ามึงครอบไว้) */
 .carousel {
   position: relative;
   width: 100%;
-  height: 300px;              /* พอดีกับจอมือถือ */
-  margin-top: 12px;
-
-  background: transparent;
-  overflow: visible;
-
-  /* ตัวหลอกตาให้เห็นเป็นวง */
-  perspective: 700px;
-  perspective-origin: 50% 50%;
+  height: 280px;
+  margin-top: 14px;
+  overflow: hidden;
+  background: transparent; /* ตามที่มึงสงสัย */
 }
 
-/* แกนหมุน */
-.carousel-ring {
+/* the ring itself */
+#ring.ring{
   position: relative;
   width: 100%;
   height: 100%;
-
-  transform-style: preserve-3d;
-  touch-action: pan-y;
+  touch-action: pan-y; /* กัน scroll ขึ้นลง */
+  perspective: 900px;
+  background: transparent;
 }
 
-/* การ์ด */
-.carousel-card {
+/* Cards: force override old .card rules */
+#ring.ring .card{
   position: absolute;
   top: 50%;
   left: 50%;
 
-  /* ↓↓↓ ลดขนาดการ์ดสำหรับมือถือ ↓↓↓ */
-  width: 120px;
-  height: 170px;
+  width: var(--carousel-card-w) !important;
+  height: var(--carousel-card-h) !important;
 
-  border-radius: 24px;
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+  transform-origin: center center;
 
-  background: var(--bg2);
-  border: 1px solid var(--stroke);
+  border-radius: 28px !important;
+  padding: 14px !important;
+
+  background: var(--bg2) !important;
+  border: 1px solid var(--stroke) !important;
 
   box-shadow:
-    10px 10px 28px var(--shadow-dark),
-   -10px -10px 28px var(--shadow-light);
-
-  transform-origin: center center;
-  transform-style: preserve-3d;
-
-  transition:
-    transform 0.4s ease,
-    filter 0.4s ease,
-    opacity 0.4s ease;
+    14px 14px 40px var(--shadow-dark),
+   -14px -14px 40px var(--shadow-light) !important;
 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 14px;
 
-  backface-visibility: hidden;
+  /* make it feel “material” */
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+
+  transition:
+    transform 260ms ease,
+    filter 260ms ease,
+    opacity 260ms ease;
 }
 
-/* เนื้อการ์ด */
-.carousel-card .card-title {
-  font-weight: 800;
-  font-size: 14px;
+/* subtle highlight layer */
+#ring.ring .card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(circle at 25% 18%, rgba(255,255,255,.65), rgba(255,255,255,0) 55%),
+    radial-gradient(circle at 70% 80%, rgba(255,255,255,.25), rgba(255,255,255,0) 58%);
+  pointer-events:none;
+  mix-blend-mode: soft-light;
+  opacity:.55;
 }
 
-.carousel-card .card-sub {
+/* title / sub */
+#ring.ring .card .card-title{
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: .02em;
+}
+
+#ring.ring .card .card-sub{
   font-size: 12px;
   color: var(--muted);
   line-height: 1.35;
 }
 
-/* ===============================
-   Depth perception
-   =============================== */
-
-.carousel-card.is-front {
+/* depth states (JS toggles) */
+#ring.ring .card.is-front{
   filter: blur(0px);
   opacity: 1;
 }
 
-.carousel-card.is-back {
+#ring.ring .card.is-back{
   filter: blur(2px);
-  opacity: 0.5;
+  opacity: .55;
 }
-
