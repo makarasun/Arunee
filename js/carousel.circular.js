@@ -9,7 +9,7 @@
   if (!ring || cards.length === 0) return;
 
   const COUNT = cards.length;
-  const RADIUS = 160;
+  const RADIUS = 60;
   const SPREAD = 10;
 
   let offset = 0;
@@ -87,6 +87,7 @@
 
   layout();
 })();
+
 
 
 
