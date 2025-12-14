@@ -1,95 +1,122 @@
-/* ==================================================
-   Circular Carousel – Isolated Module
-   Safe to use with existing script.js
-   ================================================== */
+/* =========================================================
+   Circular Carousel (DOM)
+   - Infinite loop (no auto-rotate)
+   - Swipe/drag to rotate
+   - Mobile tuned
+   Targets:
+     #ring.ring
+     children: button.card
+   ========================================================= */
 
-(function () {
-  const ring = document.querySelector(".carousel-ring");
-  const cards = Array.from(document.querySelectorAll(".carousel-card"));
-  if (!ring || cards.length === 0) return;
+(() => {
+  const ring = document.querySelector("#ring.ring");
+  if (!ring) return;
 
-  const COUNT = cards.length;
-  const RADIUS = 10;
-  const SPREAD = 0.5;
+  const cards = Array.from(ring.querySelectorAll(".card"));
+  if (cards.length === 0) return;
 
-  let offset = 0;
-  let dragging = false;
+  // ========= TUNABLES (มือถือ) =========
+  // ถ้าจะให้ชิดขึ้น: ลด SPREAD (เช่น 0.75)
+  // ถ้าจะให้ไม่ล้น/ลึกน้อยลง: ลด RADIUS (เช่น 150)
+  const RADIUS = 170;
+  const SPREAD = 0.82;
+
+  // drag sensitivity
+  const DRAG_SPEED = 0.008;
+
+  // ========= helpers =========
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  // ========= state =========
+  const n = cards.length;
+  const step = ((Math.PI * 2) / n) * SPREAD; // smaller = tighter
+  let baseAngle = 0;
+  let isDown = false;
   let startX = 0;
+  let startAngle = 0;
 
-  function layout() {
+  function render() {
+    // normalize angle for stability
+    const twoPI = Math.PI * 2;
+    const norm = (a) => {
+      a = a % twoPI;
+      if (a < -Math.PI) a += twoPI;
+      if (a > Math.PI) a -= twoPI;
+      return a;
+    };
+
+    // compute each card transform
     cards.forEach((card, i) => {
-      const idx = (i + offset) % COUNT;
-      const angle = (idx / COUNT) * Math.PI * 2;
+      const a = norm(baseAngle + i * step);
 
-      const x = Math.sin(angle) * SPREAD;
-      const z = Math.cos(angle) * RADIUS;
+      // circle coordinates (x for left-right, z for depth)
+      const x = Math.sin(a) * RADIUS;
+      const z = -Math.cos(a) * RADIUS; // front = smaller z (less negative)
 
-      const scale = 0.38 + (z / RADIUS) * 0.12;
-      const opacity = 0.4 + (z / RADIUS) * 0.6;
-      const blur = Math.max(0, 2 - (z / RADIUS) * 2);
+      // depth factor: front=1, back=0
+      const depth = (Math.cos(a) + 1) / 2;
 
-      card.style.transform = `
-        translate(-50%, -50%)
-        translate3d(${x}px, 0, ${z}px)
-        scale(${scale})
-      `;
-      card.style.opacity = opacity;
-      card.style.filter = `blur(${blur}px)`;
-      card.style.zIndex = Math.round(z);
+      // scale / blur / opacity tuned for “out focus”
+      const scale = lerp(0.72, 1.0, depth);
+      const blur = lerp(3.2, 0.0, depth);
+      const opacity = clamp(lerp(0.45, 1.0, depth), 0.2, 1.0);
+      const zIndex = Math.round(1000 * depth);
+
+      card.style.transform =
+        `translate(-50%, -50%) translate3d(${x.toFixed(2)}px, 0px, ${z.toFixed(2)}px) scale(${scale.toFixed(3)})`;
+      card.style.filter = `blur(${blur.toFixed(2)}px)`;
+      card.style.opacity = `${opacity}`;
+      card.style.zIndex = `${zIndex}`;
+
+      // state class
+      card.classList.toggle("is-front", depth > 0.86);
+      card.classList.toggle("is-back", depth < 0.35);
     });
   }
 
-  function dragStart(x) {
-    dragging = true;
-    startX = x;
+  // ========= pointer events =========
+  function onDown(clientX) {
+    isDown = true;
+    startX = clientX;
+    startAngle = baseAngle;
   }
 
-  function dragMove(x) {
-    if (!dragging) return;
-    const dx = x - startX;
-    startX = x;
-
-    if (Math.abs(dx) > 12) {
-      offset = (offset + (dx < 0 ? 1 : -1) + COUNT) % COUNT;
-      layout();
-    }
+  function onMove(clientX) {
+    if (!isDown) return;
+    const dx = clientX - startX;
+    baseAngle = startAngle + dx * DRAG_SPEED;
+    render();
   }
 
-  function dragEnd() {
-    dragging = false;
+  function onUp() {
+    isDown = false;
   }
 
-  // Touch
-  ring.addEventListener("touchstart", e =>
-    dragStart(e.touches[0].clientX)
-  );
-  ring.addEventListener("touchmove", e =>
-    dragMove(e.touches[0].clientX)
-  );
-  ring.addEventListener("touchend", dragEnd);
-
-  // Mouse
-  ring.addEventListener("mousedown", e =>
-    dragStart(e.clientX)
-  );
-  window.addEventListener("mousemove", e =>
-    dragMove(e.clientX)
-  );
-  window.addEventListener("mouseup", dragEnd);
-
-  // Click to focus
-  cards.forEach((card, i) => {
-    card.addEventListener("click", () => {
-      offset = (COUNT - i) % COUNT;
-      layout();
-    });
+  ring.addEventListener("pointerdown", (e) => {
+    ring.setPointerCapture?.(e.pointerId);
+    onDown(e.clientX);
   });
 
-  layout();
+  ring.addEventListener("pointermove", (e) => onMove(e.clientX));
+  ring.addEventListener("pointerup", onUp);
+  ring.addEventListener("pointercancel", onUp);
+  ring.addEventListener("pointerleave", onUp);
+
+  // prevent accidental click when dragging
+  let moved = 0;
+  ring.addEventListener("pointermove", (e) => {
+    if (!isDown) return;
+    moved += Math.abs(e.movementX || 0);
+  });
+  ring.addEventListener("click", (e) => {
+    if (moved > 8) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    moved = 0;
+  }, true);
+
+  // initial render (นิ่งก่อน ให้ user ปัดเอง)
+  render();
 })();
-
-
-
-
-
-
