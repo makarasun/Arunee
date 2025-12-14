@@ -37,9 +37,9 @@
   top: 50%;
   left: 50%;
 
-  width: 170px;
-  height: 230px;
-  border-radius: 28px;
+  width: 140px;
+  height: 200px;
+  border-radius: 23px;
 
   background: var(--bg2);
   border: 1px solid var(--stroke);
@@ -89,3 +89,4 @@
   filter: blur(2px);
   opacity: 0.45;
 }
+
