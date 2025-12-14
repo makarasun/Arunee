@@ -10,7 +10,7 @@
 
   const COUNT = cards.length;
   const RADIUS = 260;
-  const SPREAD = 70;
+  const SPREAD = 40;
 
   let offset = 0;
   let dragging = false;
@@ -87,3 +87,4 @@
 
   layout();
 })();
+
