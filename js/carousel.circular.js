@@ -10,7 +10,7 @@
 
   const COUNT = cards.length;
   const RADIUS = 160;
-  const SPREAD = 40;
+  const SPREAD = 10;
 
   let offset = 0;
   let dragging = false;
@@ -24,7 +24,7 @@
       const x = Math.sin(angle) * SPREAD;
       const z = Math.cos(angle) * RADIUS;
 
-      const scale = 0.78 + (z / RADIUS) * 0.22;
+      const scale = 0.38 + (z / RADIUS) * 0.12;
       const opacity = 0.4 + (z / RADIUS) * 0.6;
       const blur = Math.max(0, 2 - (z / RADIUS) * 2);
 
@@ -87,5 +87,6 @@
 
   layout();
 })();
+
 
 
