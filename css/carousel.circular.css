@@ -1,37 +1,56 @@
 /* ===============================
    CAROUSEL – CIRCULAR (VERTICAL)
+   Stage + Depth Fix (CSS only)
    =============================== */
 
+/* เวทีของวง */
 .carousel {
   position: relative;
   width: 100%;
-  height: 280px;
-  overflow: hidden;
+  height: 320px;              /* เพิ่มพื้นที่ให้วงหายใจ */
   margin-top: 16px;
+
+  background: transparent;    /* สำคัญ: โปร่งใส */
+  overflow: visible;          /* ห้ามตัด depth */
+
+  perspective: 900px;         /* ตัวสร้างความลึก */
+  perspective-origin: 50% 50%;
 }
 
+/* แกนหมุน */
 .carousel-ring {
   position: relative;
   width: 100%;
   height: 100%;
+
+  transform-style: preserve-3d; /* ให้ลูกเห็น z-depth */
+  pointer-events: auto;
   touch-action: pan-y;
+
+  /* จัดศูนย์กลางสายตา */
+  display: block;
 }
 
+/* การ์ด */
 .carousel-card {
   position: absolute;
   top: 50%;
   left: 50%;
+
   width: 170px;
   height: 230px;
   border-radius: 28px;
 
   background: var(--bg2);
   border: 1px solid var(--stroke);
+
   box-shadow:
     14px 14px 40px var(--shadow-dark),
    -14px -14px 40px var(--shadow-light);
 
   transform-origin: center center;
+  transform-style: preserve-3d;
+
   transition:
     transform 0.45s ease,
     filter 0.45s ease,
@@ -41,8 +60,11 @@
   flex-direction: column;
   justify-content: space-between;
   padding: 16px;
+
+  backface-visibility: hidden; /* กันกระพริบ */
 }
 
+/* เนื้อการ์ด */
 .carousel-card .card-title {
   font-weight: 800;
   font-size: 15px;
@@ -55,7 +77,7 @@
 }
 
 /* ===============================
-   DEPTH STATES (computed by JS)
+   DEPTH STATES (เสริม perception)
    =============================== */
 
 .carousel-card.is-front {
@@ -65,5 +87,5 @@
 
 .carousel-card.is-back {
   filter: blur(2px);
-  opacity: 0.5;
+  opacity: 0.45;
 }
