@@ -66,9 +66,10 @@
       const frontness = (1 - Math.cos(t)) / 2; // 0..1 (1 = front)
 
       // scale / blur / opacity
-      const scale = 0.72 + frontness * 0.36;         // 0.72..1.08
-      const blur = (1 - frontness) * 6.2;            // 0..6.2
-      const opacity = clamp(0.28 + frontness * 0.72, 0.28, 1);
+      const scale = 0.82 + frontness * 0.22;          // หลังไม่เล็กจนหาย
+      const blur = (1 - frontness) * 2.0;             // เบลอหลังนิดเดียว (0..2px)
+      const opacity = clamp(0.55 + frontness * 0.45, 0.55, 1); // หลังยังเห็นชัด
+
 
       const zIndex = Math.round(frontness * 1000);
 
@@ -159,6 +160,7 @@
   // Start loop (still/no auto rotate because targetAngle stays 0 until user drags)
   startRenderLoop();
 })();
+
 
 
 
