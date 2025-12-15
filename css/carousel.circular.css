@@ -1,122 +1,147 @@
 /* =========================================================
-   CIRCULAR CAROUSEL (MOBILE TUNED)
-   Targets:
+   CIRCULAR CAROUSEL (FINAL TUNE - MOBILE FIRST)
+   Targets (ของจริง):
      <div id="ring" class="ring"> ... <button class="card">
-   Requirements:
-     - transparent BG
-     - no frame/border on container
-     - cards close + circular
-   ========================================================= */
+   Goals:
+     - Transparent BG, no frame/box
+     - Cards very close (edge-to-edge feel)
+     - Upright cards (no tilt)
+========================================================= */
 
 :root{
-  /* ปรับได้ง่ายๆ ถ้าจะจูนอีก */
-  --cc-card-w: 152px;
-  --cc-card-h: 210px;
-  --cc-radius: 150px;     /* ระยะวงกลม (ใกล้ = ชิดขึ้น) */
-  --cc-depth: 260px;      /* ความลึก 3D */
+  /* ขนาดการ์ด (มือถือเป็นหลัก) */
+  --cc-card-w: 154px;
+  --cc-card-h: 212px;
+
+  /* “ความชิด” หลักๆ: ถ้าจะชิดกว่าเดิม ลด radius ลง */
+  --cc-radius: 128px;
+
+  /* ความลึกให้ดูเป็นวง */
+  --cc-depth: 270px;
 }
 
-/* ตัวครอบ carousel (ถ้ามี) อย่าให้มีกรอบ/พื้นหลัง */
+/* ====== remove any box/frame around carousel area ====== */
 .carousel,
 .carousel-wrap,
 .carousel-shell,
-.carousel-frame {
+.carousel-frame,
+#carousel,
+#carousel-shell {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
+  outline: none !important;
 }
 
-/* ตัว ring ที่มึงใช้จริง */
+/* ====== ring container (transparent / no border) ====== */
+#ring.ring,
 .ring {
   position: relative;
   width: 100%;
-  height: 250px;
-  margin: 8px 0 10px;
+  height: 248px;
+  margin: 10px 0 12px;
 
-  /* นี่แหละ “BG ต้อง transparent + ไร้กรอบ” */
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  overflow: visible;
 
-  /* ให้สไลด์แล้วไม่ชน scroll แนวตั้ง */
+  overflow: visible;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* การ์ดจริง */
+/* ====== cards ====== */
+#ring.ring .card,
 .ring .card {
   position: absolute;
   top: 50%;
   left: 50%;
+
   width: var(--cc-card-w);
   height: var(--cc-card-h);
+
   transform: translate(-50%, -50%);
   transform-origin: center center;
 
   border-radius: 26px;
-
-  /* Neumo look ของเดิม */
-  background: var(--bg2, #f6f7fb);
-  border: 1px solid var(--stroke, rgba(15, 23, 42, 0.08));
-  box-shadow:
-    12px 12px 34px var(--shadow-dark, rgba(15, 23, 42, 0.16)),
-   -12px -12px 34px var(--shadow-light, rgba(255, 255, 255, 0.9));
-
   padding: 14px;
+
+  /* neumorphic */
+  background: rgba(246, 247, 251, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    12px 12px 34px rgba(15, 23, 42, 0.14),
+   -12px -12px 34px rgba(255, 255, 255, 0.86);
+
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  gap: 6px;
+  justify-content: space-between;
 
-  /* ห้ามเอียงการ์ด */
+  /* no tilt */
   rotate: 0deg;
 
-  /* ให้ JS ลื่น แต่ไม่ “วูบวาบ” */
+  /* smoother feel */
   transition:
-    filter .22s ease,
-    opacity .22s ease;
+    filter 220ms ease,
+    opacity 220ms ease;
 
-  /* กันปุ่ม default */
   cursor: grab;
   -webkit-tap-highlight-color: transparent;
 }
 
+#ring.ring.is-dragging .card,
 .ring.is-dragging .card {
   cursor: grabbing;
 }
 
-/* ตัวอักษรในการ์ด (ถ้ามี) */
+#ring.ring .card .card-title,
 .ring .card .card-title {
   font-weight: 900;
   font-size: 16px;
   letter-spacing: 0.01em;
 }
 
+#ring.ring .card .card-sub,
 .ring .card .card-sub {
   font-size: 12px;
-  color: var(--muted, rgba(15, 23, 42, 0.62));
+  color: rgba(15, 23, 42, 0.62);
+  line-height: 1.35;
 }
 
-/* Mobile small */
+/* Optional states from JS */
+.card.is-front { filter: blur(0px); opacity: 1; }
+.card.is-back  { filter: blur(2px); opacity: .55; }
+
+/* Small phones */
 @media (max-width: 380px) {
   :root{
-    --cc-card-w: 142px;
-    --cc-card-h: 200px;
-    --cc-radius: 138px;
-    --cc-depth: 250px;
+    --cc-card-w: 146px;
+    --cc-card-h: 202px;
+    --cc-radius: 122px;
+    --cc-depth: 262px;
   }
-  .ring { height: 235px; }
+  #ring.ring, .ring { height: 238px; }
 }
 
-/* Mobile large */
+/* Large phones */
 @media (min-width: 420px) and (max-width: 560px) {
   :root{
-    --cc-card-w: 160px;
-    --cc-card-h: 220px;
-    --cc-radius: 160px;
-    --cc-depth: 275px;
+    --cc-card-w: 162px;
+    --cc-card-h: 224px;
+    --cc-radius: 132px;
+    --cc-depth: 280px;
   }
-  .ring { height: 265px; }
+  #ring.ring, .ring { height: 262px; }
+}
+
+/* Tablet+ */
+@media (min-width: 768px) {
+  :root{
+    --cc-card-w: 168px;
+    --cc-card-h: 230px;
+    --cc-radius: 150px;
+    --cc-depth: 320px;
+  }
+  #ring.ring, .ring { height: 320px; }
 }
