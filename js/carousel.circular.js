@@ -44,8 +44,8 @@
 
     // ชิดกันกว่าก่อน (ขอบเกือบติดขอบ)
     const minR = (cardW / (2 * Math.sin(Math.PI / N))) * 0.86;
-    const maxR = Math.min(w, h) * 0.40;
-    const R = Math.max(60, Math.min(minR, maxR));
+    const maxR = Math.min(w, h) * 0.30;
+    const R = Math.max(55, Math.min(minR, maxR));
 
     // depth กำลังพอดี
     const Z = Math.max(70, Math.min(150, R * 1.15));
@@ -230,3 +230,4 @@
     to = setTimeout(render, 80);
   });
 })();
+
