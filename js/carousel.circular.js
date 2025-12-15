@@ -1,12 +1,13 @@
 /* =========================================================
-   CIRCULAR CAROUSEL (MOBILE TUNED)
-   - 6 cards
-   - infinite, manual swipe only (no auto rotate)
-   - cards upright (no tilt)
-   - out focus by depth
+   CIRCULAR CAROUSEL (FINAL TUNE)
    Targets:
      #ring.ring > button.card
-   ========================================================= */
+   Goals:
+     - Cards closer (edge-to-edge feel)
+     - Transparent container (handled by CSS)
+     - Smoothness +10% (easing + inertia)
+     - Infinite, manual only (no auto-rotate)
+========================================================= */
 
 (function () {
   const ring = document.getElementById("ring");
@@ -15,115 +16,146 @@
   const cards = Array.from(ring.querySelectorAll(".card"));
   if (!cards.length) return;
 
-  // ====== TUNING (หลักๆ จูน 2 ตัวนี้ก่อน) ======
-  // ระยะวงกลม: ใกล้ = ชิดกันขึ้น แต่ต้องไม่ชนกันจนอ่านไม่ออก
-  let RADIUS = 150; // px
-  // ความลึก 3D: มาก = หน้าชัด หลังเบลอหนักขึ้น
-  let DEPTH = 260; // px
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
 
-  // อ่านค่าจาก CSS variables ถ้ามี (ให้มึงจูนที่ css ได้ด้วย)
-  const css = getComputedStyle(document.documentElement);
-  const cssRadius = parseFloat(css.getPropertyValue("--cc-radius"));
-  const cssDepth = parseFloat(css.getPropertyValue("--cc-depth"));
-  if (!Number.isNaN(cssRadius)) RADIUS = cssRadius;
-  if (!Number.isNaN(cssDepth)) DEPTH = cssDepth;
+  // Pull tuning from CSS vars (single source of truth)
+  const rootStyle = getComputedStyle(document.documentElement);
+  const readVar = (name, fallback) => {
+    const v = parseFloat(rootStyle.getPropertyValue(name));
+    return Number.isFinite(v) ? v : fallback;
+  };
+
+  // “ชิดกัน” หลักอยู่ตรง RADIUS
+  let RADIUS = readVar("--cc-radius", 128);
+  let DEPTH  = readVar("--cc-depth", 270);
 
   const N = cards.length;
-  const STEP = (Math.PI * 2) / N; // มุมต่อใบ
+  const STEP = (Math.PI * 2) / N;
 
-  // state
-  let angle = 0;             // current rotation
-  let startX = 0;
-  let startAngle = 0;
+  // Drag feel
+  const SENS = 0.008;         // base sensitivity
+  const EASE = 0.14;          // +10% smoothness (was ~0.12-ish feel)
+  const FRICTION = 0.935;     // inertia smoother (higher = glide longer)
+  const MIN_V = 0.0012;
+
+  // State
+  let targetAngle = 0;        // where the user is dragging toward
+  let angle = 0;              // rendered angle (eased)
   let dragging = false;
 
-  // “ความไวการปัด” (มาก = หมุนไว)
-  const SENSITIVITY = 0.008;
+  let startX = 0;
+  let startTarget = 0;
 
-  // clamp helper
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  let lastX = 0;
+  let lastT = 0;
+  let velocity = 0;
+  let raf = null;
 
   function render() {
-    // จัด depth ตาม cos(theta): หน้า = cos ใกล้ 1, หลัง = cos ใกล้ -1
+    // ease angle toward targetAngle
+    angle = lerp(angle, targetAngle, EASE);
+
     for (let i = 0; i < N; i++) {
       const t = angle + i * STEP;
 
-      // วงกลมซ้าย-ขวา (x) + depth (z)
+      // circle
       const x = Math.sin(t) * RADIUS;
-      const z = -Math.cos(t) * DEPTH; // หน้าออกมา = z น้อยกว่า? เราใช้เป็น depth weight เอง
+      const z = -Math.cos(t) * DEPTH;
 
-      // normalize depth: front ~ 1, back ~ 0
-      const frontness = (Math.cos(t) + 1) / 2; // 0..1 (1=front)
+      const frontness = (Math.cos(t) + 1) / 2; // 0..1
 
-      // scale: หน้าใหญ่ หลังเล็ก (แต่ไม่ให้หายไป)
-      const scale = 0.70 + frontness * 0.38;   // 0.70..1.08
+      // scale / blur / opacity
+      const scale = 0.72 + frontness * 0.36;         // 0.72..1.08
+      const blur = (1 - frontness) * 6.2;            // 0..6.2
+      const opacity = clamp(0.28 + frontness * 0.72, 0.28, 1);
 
-      // blur: หลังเบลอ หน้าใส
-      const blur = (1 - frontness) * 6.5;      // 0..6.5px
-
-      // opacity: หลังจาง หน้าเต็ม (ห้ามติดลบ)
-      const opacity = clamp(0.25 + frontness * 0.75, 0.25, 1);
-
-      // z-index ให้ใบหน้าทับ
       const zIndex = Math.round(frontness * 1000);
 
       const el = cards[i];
       el.style.transform =
         `translate(-50%, -50%) translate3d(${x.toFixed(2)}px, 0px, ${z.toFixed(2)}px) scale(${scale.toFixed(3)})`;
-      el.style.filter = `blur(${blur.toFixed(2)}px)`;
+      el.style.filter = `blur(${clamp(blur, 0, 10).toFixed(2)}px)`;
       el.style.opacity = String(opacity);
       el.style.zIndex = String(zIndex);
 
-      // class ช่วยดีบัก
       el.classList.toggle("is-front", frontness > 0.88);
-      el.classList.toggle("is-back", frontness < 0.25);
+      el.classList.toggle("is-back", frontness < 0.22);
     }
+
+    raf = requestAnimationFrame(render);
   }
 
-  function onPointerDown(e) {
+  function startRenderLoop() {
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(render);
+  }
+
+  function onDown(e) {
     dragging = true;
     ring.classList.add("is-dragging");
+
     startX = e.clientX;
-    startAngle = angle;
+    startTarget = targetAngle;
+
+    lastX = e.clientX;
+    lastT = performance.now();
+    velocity = 0;
+
     ring.setPointerCapture?.(e.pointerId);
   }
 
-  function onPointerMove(e) {
+  function onMove(e) {
     if (!dragging) return;
-    const dx = e.clientX - startX;
-    angle = startAngle + dx * SENSITIVITY;
 
-    // infinite by nature (angle is unbounded)
-    render();
+    const dx = e.clientX - startX;
+    targetAngle = startTarget + dx * SENS;
+
+    // velocity estimate
+    const t = performance.now();
+    const dt = Math.max(1, t - lastT);
+    const ddx = e.clientX - lastX;
+    velocity = (ddx * SENS) / (dt / 16.67);
+
+    lastX = e.clientX;
+    lastT = t;
   }
 
-  function onPointerUp(e) {
+  function onUp(e) {
+    if (!dragging) return;
     dragging = false;
     ring.classList.remove("is-dragging");
     ring.releasePointerCapture?.(e.pointerId);
+
+    // inertia: keep moving a bit
+    let v = velocity;
+    function glide() {
+      if (dragging) return;
+      if (Math.abs(v) < MIN_V) return;
+
+      targetAngle += v;
+      v *= FRICTION;
+
+      requestAnimationFrame(glide);
+    }
+    requestAnimationFrame(glide);
   }
 
-  // Prevent click selecting / accidental focus while dragging
-  ring.addEventListener("click", (e) => {
-    if (ring.classList.contains("is-dragging")) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }, true);
+  ring.addEventListener("pointerdown", onDown, { passive: true });
+  ring.addEventListener("pointermove", onMove, { passive: true });
+  ring.addEventListener("pointerup", onUp, { passive: true });
+  ring.addEventListener("pointercancel", onUp, { passive: true });
+  ring.addEventListener("pointerleave", onUp, { passive: true });
 
-  ring.addEventListener("pointerdown", onPointerDown, { passive: true });
-  ring.addEventListener("pointermove", onPointerMove, { passive: true });
-  ring.addEventListener("pointerup", onPointerUp, { passive: true });
-  ring.addEventListener("pointercancel", onPointerUp, { passive: true });
-  ring.addEventListener("pointerleave", onPointerUp, { passive: true });
+  // Re-read CSS vars on resize/orientation changes
+  window.addEventListener("resize", () => {
+    const rs = getComputedStyle(document.documentElement);
+    const v1 = parseFloat(rs.getPropertyValue("--cc-radius"));
+    const v2 = parseFloat(rs.getPropertyValue("--cc-depth"));
+    if (Number.isFinite(v1)) RADIUS = v1;
+    if (Number.isFinite(v2)) DEPTH = v2;
+  });
 
-  // initial render (must be still, no auto rotate)
-  render();
-
-  // expose tiny debug knobs (optional)
-  window.__CAROUSEL_DEBUG__ = {
-    setRadius(v) { RADIUS = Number(v) || RADIUS; render(); },
-    setDepth(v) { DEPTH = Number(v) || DEPTH; render(); },
-    get() { return { RADIUS, DEPTH, N }; }
-  };
+  // Start loop (still/no auto rotate because targetAngle stays 0 until user drags)
+  startRenderLoop();
 })();
