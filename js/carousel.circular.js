@@ -203,10 +203,10 @@
       STATE.vel *= FRICTION;
 
       if (Math.abs(STATE.vel) < STOP_EPS){
-        STATE.vel = 0;
-        snapToNearest();  // ✅ ล็อคเข้าการ์ดที่ใกล้สุด
-        return;
-      }
+  STATE.vel = 0;
+  return; // ❌ ไม่ snap แล้ว
+}
+
 
       STATE.angle += STATE.vel;
       render();
@@ -230,4 +230,5 @@
     to = setTimeout(render, 80);
   });
 })();
+
 
