@@ -11,8 +11,8 @@
   --car-pad: 8px;
 
   /* ✅ ทำให้ใหญ่ขึ้น */
-  --card-w: 150px;
-  --card-h: 225px;
+  --card-w: 180px;
+  --card-h: 270px;
 
   --shadow-a: rgba(15, 23, 42, 0.18);
   --shadow-b: rgba(15, 23, 42, 0.24);
@@ -113,3 +113,4 @@
     --card-h: 262px;
   }
 }
+
