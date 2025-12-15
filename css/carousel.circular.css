@@ -14,10 +14,10 @@
   --cc-card-h: 212px;
 
   /* “ความชิด” หลักๆ: ถ้าจะชิดกว่าเดิม ลด radius ลง */
-  --cc-radius: 140px;
+  --cc-radius: 160px;
 
   /* ความลึกให้ดูเป็นวง */
-  --cc-depth: 270px;
+  --cc-depth: 250px;
 }
 
 /* ====== remove any box/frame around carousel area ====== */
@@ -145,4 +145,5 @@
   }
   #ring.ring, .ring { height: 320px; }
 }
+
 
