@@ -198,3 +198,5 @@ body{overflow-x:hidden}
 .msg{padding:10px 12px;border-radius:16px;margin:8px 0;max-width:92%}
 .msg.u{background:rgba(96,165,250,.12);margin-left:auto}
 .msg.a{background:rgba(251,113,133,.10)}
+/* PATCH: Disable page background image layer (curtain-bg1) */
+#bg-layer { display: none !important; }
