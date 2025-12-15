@@ -1,132 +1,122 @@
 /* =========================================================
-   CIRCULAR CAROUSEL (MOBILE-FIRST)
-   - Transparent background (no frame / no box)
-   - Vertical cards, closer spacing
-   - Works with markup:
-     #ring.ring > button.card
-     OR .carousel-ring > .carousel-card
-========================================================= */
+   CIRCULAR CAROUSEL (MOBILE TUNED)
+   Targets:
+     <div id="ring" class="ring"> ... <button class="card">
+   Requirements:
+     - transparent BG
+     - no frame/border on container
+     - cards close + circular
+   ========================================================= */
 
-/* ---------- host area (remove any box look) ---------- */
-.carousel,
-.carousel-shell,
-#carousel,
-#carousel-shell {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  outline: none !important;
+:root{
+  /* ปรับได้ง่ายๆ ถ้าจะจูนอีก */
+  --cc-card-w: 152px;
+  --cc-card-h: 210px;
+  --cc-radius: 150px;     /* ระยะวงกลม (ใกล้ = ชิดขึ้น) */
+  --cc-depth: 260px;      /* ความลึก 3D */
 }
 
-/* ---------- ring container ---------- */
-.ring,
-.carousel-ring,
-#ring {
+/* ตัวครอบ carousel (ถ้ามี) อย่าให้มีกรอบ/พื้นหลัง */
+.carousel,
+.carousel-wrap,
+.carousel-shell,
+.carousel-frame {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ตัว ring ที่มึงใช้จริง */
+.ring {
   position: relative;
   width: 100%;
-  height: 260px;            /* mobile default */
-  overflow: visible;        /* allow depth feel */
-  background: transparent;
-  border: none;
-  box-shadow: none;
-  touch-action: pan-y;      /* allow vertical scroll, we capture horizontal drag */
+  height: 250px;
+  margin: 8px 0 10px;
+
+  /* นี่แหละ “BG ต้อง transparent + ไร้กรอบ” */
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: visible;
+
+  /* ให้สไลด์แล้วไม่ชน scroll แนวตั้ง */
+  touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
-  perspective: 900px;
-  transform-style: preserve-3d;
 }
 
-/* ---------- cards ---------- */
-.card,
-.carousel-card {
+/* การ์ดจริง */
+.ring .card {
   position: absolute;
   top: 50%;
   left: 50%;
-
-  /* Mobile-first sizing */
-  width: clamp(120px, 38vw, 150px);
-  height: clamp(170px, 52vw, 205px);
+  width: var(--cc-card-w);
+  height: var(--cc-card-h);
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
 
   border-radius: 26px;
-  padding: 14px;
 
-  /* neumorphic material */
-  background: rgba(246, 247, 251, 0.92);
-  border: 1px solid rgba(15, 23, 42, 0.08);
-
+  /* Neumo look ของเดิม */
+  background: var(--bg2, #f6f7fb);
+  border: 1px solid var(--stroke, rgba(15, 23, 42, 0.08));
   box-shadow:
-    12px 12px 34px rgba(15, 23, 42, 0.14),
-   -12px -12px 34px rgba(255, 255, 255, 0.85);
+    12px 12px 34px var(--shadow-dark, rgba(15, 23, 42, 0.16)),
+   -12px -12px 34px var(--shadow-light, rgba(255, 255, 255, 0.9));
 
-  transform-origin: center center;
-  transform-style: preserve-3d;
-
-  /* JS will drive transforms. Keep transitions light & smooth. */
-  transition:
-    transform 260ms ease,
-    filter 260ms ease,
-    opacity 260ms ease;
-
+  padding: 14px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
+  gap: 6px;
 
+  /* ห้ามเอียงการ์ด */
+  rotate: 0deg;
+
+  /* ให้ JS ลื่น แต่ไม่ “วูบวาบ” */
+  transition:
+    filter .22s ease,
+    opacity .22s ease;
+
+  /* กันปุ่ม default */
   cursor: grab;
   -webkit-tap-highlight-color: transparent;
 }
 
-.card:active,
-.carousel-card:active {
+.ring.is-dragging .card {
   cursor: grabbing;
 }
 
-/* Title / subtitle (supports your existing inner elements) */
-.card .card-title,
-.carousel-card .card-title {
-  font-weight: 800;
-  font-size: 15px;
-  line-height: 1.15;
+/* ตัวอักษรในการ์ด (ถ้ามี) */
+.ring .card .card-title {
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 0.01em;
 }
 
-.card .card-sub,
-.carousel-card .card-sub {
+.ring .card .card-sub {
   font-size: 12px;
-  line-height: 1.35;
-  opacity: 0.72;
+  color: var(--muted, rgba(15, 23, 42, 0.62));
 }
 
-/* If your cards have icons/emoji */
-.card .card-icon,
-.carousel-card .card-icon {
-  font-size: 18px;
-  opacity: 0.85;
-}
-
-/* ---------- optional: front/back states (JS will toggle) ---------- */
-.card.is-front,
-.carousel-card.is-front {
-  filter: blur(0px);
-  opacity: 1;
-}
-
-.card.is-back,
-.carousel-card.is-back {
-  filter: blur(2px);
-  opacity: 0.55;
-}
-
-/* ---------- larger screens ---------- */
-@media (min-width: 768px) {
-  .ring,
-  .carousel-ring,
-  #ring {
-    height: 320px;
+/* Mobile small */
+@media (max-width: 380px) {
+  :root{
+    --cc-card-w: 142px;
+    --cc-card-h: 200px;
+    --cc-radius: 138px;
+    --cc-depth: 250px;
   }
+  .ring { height: 235px; }
+}
 
-  .card,
-  .carousel-card {
-    width: 160px;
-    height: 220px;
-    border-radius: 28px;
+/* Mobile large */
+@media (min-width: 420px) and (max-width: 560px) {
+  :root{
+    --cc-card-w: 160px;
+    --cc-card-h: 220px;
+    --cc-radius: 160px;
+    --cc-depth: 275px;
   }
+  .ring { height: 265px; }
 }
