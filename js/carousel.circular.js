@@ -27,8 +27,8 @@
   };
 
   // “ชิดกัน” หลักอยู่ตรง RADIUS
-  let RADIUS = readVar("--cc-radius", 128);
-  let DEPTH  = readVar("--cc-depth", 270);
+  let RADIUS = readVar("--cc-radius", 140);
+  let DEPTH  = readVar("--cc-depth", 250);
 
   const N = cards.length;
   const STEP = (Math.PI * 2) / N;
@@ -159,3 +159,4 @@
   // Start loop (still/no auto rotate because targetAngle stays 0 until user drags)
   startRenderLoop();
 })();
+
