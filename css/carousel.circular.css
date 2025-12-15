@@ -1,41 +1,50 @@
 /* =========================================================
-   CIRCULAR CAROUSEL (FINAL TUNE - MOBILE FIRST)
-   Targets (ของจริง):
-     <div id="ring" class="ring"> ... <button class="card">
+   CIRCULAR CAROUSEL (FLOATING LOOK - NO FRAME)
+   Targets:
+     #ring.ring + button.card
    Goals:
-     - Transparent BG, no frame/box
-     - Cards very close (edge-to-edge feel)
-     - Upright cards (no tilt)
+     - transparent BG
+     - no container frame / no clipping
+     - floating cards on the page
 ========================================================= */
 
 :root{
-  /* ขนาดการ์ด (มือถือเป็นหลัก) */
   --cc-card-w: 154px;
   --cc-card-h: 212px;
-
-  /* “ความชิด” หลักๆ: ถ้าจะชิดกว่าเดิม ลด radius ลง */
-  --cc-radius: 160px;
-
-  /* ความลึกให้ดูเป็นวง */
-  --cc-depth: 250px;
+  --cc-radius: 128px;   /* ชิดมาก */
+  --cc-depth: 270px;
 }
 
-/* ====== remove any box/frame around carousel area ====== */
+/* kill any box/frame on wrappers (กันกรอบจาก overflow/box-shadow) */
 .carousel,
 .carousel-wrap,
 .carousel-shell,
 .carousel-frame,
-#carousel,
-#carousel-shell {
+.services-panel,
+.section-panel,
+.panel,
+.glass,
+.glass-panel {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
   outline: none !important;
 }
 
-/* ====== ring container (transparent / no border) ====== */
+/* IMPORTANT: prevent shadow clipping that looks like a “box” */
+.carousel,
+.carousel-wrap,
+.carousel-shell,
+.carousel-frame,
+.services-panel,
+.section-panel,
+.panel {
+  overflow: visible !important;
+}
+
+/* ring itself */
 #ring.ring,
-.ring {
+.ring{
   position: relative;
   width: 100%;
   height: 248px;
@@ -45,15 +54,15 @@
   border: 0 !important;
   box-shadow: none !important;
 
-  overflow: visible;
+  overflow: visible !important;
   touch-action: pan-y;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* ====== cards ====== */
+/* cards */
 #ring.ring .card,
-.ring .card {
+.ring .card{
   position: absolute;
   top: 50%;
   left: 50%;
@@ -67,53 +76,49 @@
   border-radius: 26px;
   padding: 14px;
 
-  /* neumorphic */
-  background: rgba(246, 247, 251, 0.94);
-  border: 1px solid rgba(15, 23, 42, 0.08);
+  /* Floating material */
+  background: rgba(246, 247, 251, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.07);
+
+  /* ลดเงาดำลง + เพิ่มเงาขาวนิดให้ดู “ลอย” */
   box-shadow:
-    12px 12px 34px rgba(15, 23, 42, 0.14),
-   -12px -12px 34px rgba(255, 255, 255, 0.86);
+    10px 10px 24px rgba(15, 23, 42, 0.12),
+   -10px -10px 24px rgba(255, 255, 255, 0.86);
 
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 
-  /* no tilt */
   rotate: 0deg;
 
-  /* smoother feel */
   transition:
-    filter 220ms ease,
-    opacity 220ms ease;
+    filter 200ms ease,
+    opacity 200ms ease;
 
   cursor: grab;
   -webkit-tap-highlight-color: transparent;
 }
 
 #ring.ring.is-dragging .card,
-.ring.is-dragging .card {
+.ring.is-dragging .card{
   cursor: grabbing;
 }
 
 #ring.ring .card .card-title,
-.ring .card .card-title {
+.ring .card .card-title{
   font-weight: 900;
   font-size: 16px;
   letter-spacing: 0.01em;
 }
 
 #ring.ring .card .card-sub,
-.ring .card .card-sub {
+.ring .card .card-sub{
   font-size: 12px;
   color: rgba(15, 23, 42, 0.62);
   line-height: 1.35;
 }
 
-/* Optional states from JS */
-.card.is-front { filter: blur(0px); opacity: 1; }
-.card.is-back  { filter: blur(2px); opacity: .55; }
-
-/* Small phones */
+/* Mobile small */
 @media (max-width: 380px) {
   :root{
     --cc-card-w: 146px;
@@ -121,7 +126,7 @@
     --cc-radius: 122px;
     --cc-depth: 262px;
   }
-  #ring.ring, .ring { height: 238px; }
+  #ring.ring, .ring{ height: 238px; }
 }
 
 /* Large phones */
@@ -132,18 +137,5 @@
     --cc-radius: 132px;
     --cc-depth: 280px;
   }
-  #ring.ring, .ring { height: 262px; }
+  #ring.ring, .ring{ height: 262px; }
 }
-
-/* Tablet+ */
-@media (min-width: 768px) {
-  :root{
-    --cc-card-w: 168px;
-    --cc-card-h: 230px;
-    --cc-radius: 150px;
-    --cc-depth: 320px;
-  }
-  #ring.ring, .ring { height: 320px; }
-}
-
-
