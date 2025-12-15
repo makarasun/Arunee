@@ -109,7 +109,7 @@
     if (!dragging) return;
 
     const dx = e.clientX - startX;
-    targetAngle = startTarget + dx * SENS;
+    targetAngle = startTarget - dx * SENS;
 
     // velocity estimate
     const t = performance.now();
@@ -159,5 +159,6 @@
   // Start loop (still/no auto rotate because targetAngle stays 0 until user drags)
   startRenderLoop();
 })();
+
 
 
