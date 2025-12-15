@@ -11,7 +11,7 @@
 :root{
   --cc-card-w: 154px;
   --cc-card-h: 212px;
-  --cc-radius: 128px;   /* ชิดมาก */
+  --cc-radius: 145px;   /* ชิดมาก */
   --cc-depth: 270px;
 }
 
@@ -139,3 +139,4 @@
   }
   #ring.ring, .ring{ height: 262px; }
 }
+
