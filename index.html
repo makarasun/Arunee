@@ -65,57 +65,34 @@
 
       <div class="carousel">
         <div id="ring" class="ring" aria-label="carousel cards">
-          <!-- 6 cards (แก้ชื่อได้ทีหลังตามหัวการ์ดเดิมของมึง) -->
-          <button class="card" data-key="curtain" type="button">
-            <div class="card-face">
-              <div class="card-icon">🪟</div>
-              <div class="card-title">ผ้าม่าน / มู่ลี่</div>
-              <div class="card-sub">บ้าน • คอนโด • สำนักงาน</div>
-            </div>
-          </button>
+  <!-- 6 cards (PNG card skins) -->
+  <button class="card" data-key="curtain" type="button" aria-label="ผ้าม่าน / มู่ลี่">
+    <img class="card-art" src="/assets/cards/card-curtain.png" alt="ผ้าม่าน / มู่ลี่" />
+  </button>
 
-          <button class="card" data-key="wallpaper" type="button">
-            <div class="card-face">
-              <div class="card-icon">🧱</div>
-              <div class="card-title">วอลเปเปอร์</div>
-              <div class="card-sub">เพิ่มมิติ • แต่งผนัง</div>
-            </div>
-          </button>
+  <button class="card" data-key="wallpaper" type="button" aria-label="วอลเปเปอร์">
+    <img class="card-art" src="/assets/cards/card-wall.png" alt="วอลเปเปอร์" />
+  </button>
 
-          <button class="card" data-key="blind" type="button">
-            <div class="card-face">
-              <div class="card-icon">🪟</div>
-              <div class="card-title">ม่านปรับแสง</div>
-              <div class="card-sub">ทน • ดูแลง่าย</div>
-            </div>
-          </button>
+  <button class="card" data-key="blind" type="button" aria-label="ม่านปรับแสง">
+    <!-- ถ้ามึงยังไม่มีไฟล์เฉพาะ blind ให้ใช้ curtain ไปก่อน หรือเปลี่ยนเป็นไฟล์จริงทีหลัง -->
+    <img class="card-art" src="/assets/cards/card-curtain.png" alt="ม่านปรับแสง" />
+  </button>
 
-          <button class="card" data-key="floor" type="button">
-            <div class="card-face">
-              <div class="card-icon">🧩</div>
-              <div class="card-title">พื้น / พรม</div>
-              <div class="card-sub">เรียบร้อย • ใช้งานหนัก</div>
-            </div>
-          </button>
+  <button class="card" data-key="floor" type="button" aria-label="พื้น / พรม">
+    <img class="card-art" src="/assets/cards/card-floor.png" alt="พื้น / พรม" />
+  </button>
 
-          <button class="card" data-key="fabric" type="button">
-            <div class="card-face">
-              <div class="card-icon">🧵</div>
-              <div class="card-title">ผ้า / วัสดุ</div>
-              <div class="card-sub">โทน • Texture</div>
-            </div>
-          </button>
+  <button class="card" data-key="fabric" type="button" aria-label="ผ้า / วัสดุ">
+    <!-- ถ้ามึงยังไม่มีไฟล์เฉพาะ fabric ให้ใช้ design ไปก่อน หรือเปลี่ยนเป็นไฟล์จริงทีหลัง -->
+    <img class="card-art" src="/assets/cards/card-design.png" alt="ผ้า / วัสดุ" />
+  </button>
 
-          <button class="card" data-key="service" type="button">
-            <div class="card-face">
-              <div class="card-icon">🛠️</div>
-              <div class="card-title">ติดตั้ง / หน้างาน</div>
-              <div class="card-sub">วัด • ติดตั้ง • เก็บงาน</div>
-            </div>
-          </button>
-        </div>
-      </div>
-    </section>
+  <button class="card" data-key="service" type="button" aria-label="ติดตั้ง / หน้างาน">
+    <img class="card-art" src="/assets/cards/card-install.png" alt="ติดตั้ง / หน้างาน" />
+  </button>
+</div>
+
 
     <!-- Viewer -->
     <section class="section">
