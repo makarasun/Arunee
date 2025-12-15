@@ -1,77 +1,91 @@
 /* ===============================
-   CAROUSEL – CIRCULAR (MOBILE TUNED)
-   Transparent BG / no frame
+   CAROUSEL – CIRCULAR (MOBILE TUNE)
    =============================== */
 
 :root{
-  --cc-card-w: 120px;
-  --cc-card-h: 190px;
-  --cc-radius: 120px;   /* ความ “ชิด” ของวง (น้อยลง = ชิดขึ้น/ทับกันมากขึ้น) */
+  --carousel-h: 230px;     /* สูงของโซน carousel (กันพื้นที่ไม่ให้ทับ section ล่าง) */
+  --card-w: 124px;         /* ขนาดการ์ดบนมือถือ */
+  --card-h: 186px;
+  --card-radius: 26px;
 }
 
-@media (max-width: 420px){
-  :root{
-    --cc-card-w: 148px;
-    --cc-card-h: 228px;
-    --cc-radius: 112px;
-  }
-}
-
-/* container โปร่งใส ไร้กรอบ */
+/* โซนรวม */
 .carousel{
   position: relative;
   width: 100%;
-  height: 220px;
-  margin-top: 8px;
-  overflow: visible;          /* สำคัญ: ไม่ตัดเงา */
-  background: transparent;    /* โปร่งใส */
-  border: 0;                  /* ไม่เอากรอบ */
-  box-shadow: none;           /* ไม่เอากล่องเงา */
+  height: var(--carousel-h);
+  margin: 10px 0 18px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;       /* ให้การ์ดลอยได้ */
+  isolation: isolate;      /* กัน z-index แปลกๆ */
 }
 
-/* ring โปร่งใส ไร้กรอบ */
-#ring.ring{
+/* วง/ริง */
+.ring, .carousel-ring, #ring{
   position: relative;
   width: 100%;
   height: 100%;
-  touch-action: pan-y;        /* ให้ปัดซ้ายขวาได้ แต่ยัง scroll แนวตั้งได้ */
+  touch-action: pan-y;
   background: transparent;
   border: 0;
   box-shadow: none;
   overflow: visible;
+  perspective: 900px;
+  transform-style: preserve-3d;
+  z-index: 2;              /* ให้อยู่เหนือพื้นหลัง แต่ยังอยู่ในโซนตัวเอง */
 }
 
-/* การ์ด (ใช้รูป PNG เป็นตัวการ์ดทั้งใบ) */
-#ring .card{
+/* การ์ด */
+.card, .carousel-card{
   position: absolute;
   top: 50%;
   left: 50%;
-  width: var(--cc-card-w);
-  height: var(--cc-card-h);
-
-  padding: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: var(--card-radius);
   border: 0;
-  background-color: transparent;
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
-  box-shadow: none;           /* เงาหลักมาจาก PNG แล้ว */
-  border-radius: 0;           /* กันโดนตัดมุมของ PNG */
-  cursor: pointer;
+  background: transparent; /* สำคัญ: การ์ดเป็น PNG ชิ้นเดียว ไม่ต้องมีพื้น */
+  box-shadow: none;        /* เอากรอบ/เงากล่องออกก่อน เพื่อให้ “ลอยบนหน้า” จริงๆ */
+  padding: 0;
+  margin: 0;
 
   transform-origin: center center;
   will-change: transform, filter, opacity;
-  transition: transform 0.28s ease, filter 0.28s ease, opacity 0.28s ease;
+
+  /* กันไม่ให้การ์ดไปจับ layout ของ section อื่น */
+  pointer-events: auto;
 }
 
-/* ลด “กรอบ/เงาเหมือนมี BG” ที่มึงเห็นบ่อยๆ มาจาก blur หนัก + opacity ต่ำ */
-#ring .card.is-front{
-  filter: blur(0px);
-  opacity: 1;
+/* ถ้ายังมี inner content เดิมอยู่ ให้ซ่อน (เพราะตอนนี้ใช้ PNG) */
+.card .card-face,
+.card .card-icon,
+.card .card-title,
+.card .card-sub{
+  display: none !important;
 }
 
-#ring .card.is-back{
-  filter: blur(1.2px);   /* เบลอแค่นิดเดียว ให้ยังอ่านได้ */
-  opacity: 0.78;
+/* รูป PNG ให้เต็มการ์ด */
+.card{
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
 }
 
+/* mapping ตาม data-key (แก้ path ให้ตรง repo มึง) */
+.card[data-key="curtain"]{  background-image: url("/assets/card-curtain.png"); }
+.card[data-key="wallpaper"]{background-image: url("/assets/card-wall.png"); }
+.card[data-key="blind"]{    background-image: url("/assets/card-design.png"); } /* ถ้ายังไม่มีไฟล์ blind ให้เปลี่ยนเอง */
+.card[data-key="floor"]{    background-image: url("/assets/card-floor.png"); }
+.card[data-key="fabric"]{   background-image: url("/assets/card-install.png"); } /* เปลี่ยนได้ */
+.card[data-key="service"]{  background-image: url("/assets/card-aftercar.png"); }
+
+/* ปรับให้มือถือเล็กมากไม่ล้น */
+@media (max-width: 380px){
+  :root{
+    --carousel-h: 210px;
+    --card-w: 112px;
+    --card-h: 170px;
+  }
+}
