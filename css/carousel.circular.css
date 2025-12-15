@@ -1,19 +1,21 @@
 /* ===============================
    CAROUSEL – CIRCULAR (MOBILE FIRST)
    Fix:
-   - perspective + preserve-3d (ให้ z ทำงานจริง)
-   - transparent / no frame
+   - Bigger cards
+   - Transparent/no frame
+   - Stacking isolated (ไม่ทับ section อื่น)
    =============================== */
 
 :root{
-  --car-h: 250px;
+  --car-h: 320px;
   --car-pad: 8px;
 
-  --card-w: 112px;
-  --card-h: 168px;
+  /* ✅ ทำให้ใหญ่ขึ้น */
+  --card-w: 150px;
+  --card-h: 225px;
 
-  --shadow-a: rgba(15, 23, 42, 0.22);
-  --shadow-b: rgba(15, 23, 42, 0.26);
+  --shadow-a: rgba(15, 23, 42, 0.18);
+  --shadow-b: rgba(15, 23, 42, 0.24);
 }
 
 .carousel{
@@ -27,6 +29,9 @@
   background: transparent;
   border: 0;
   box-shadow: none;
+
+  /* ✅ จำกัดโลกของมัน ไม่ไปทับ section อื่น */
+  z-index: 0;
 }
 
 .ring,
@@ -39,13 +44,16 @@
   border: 0;
   box-shadow: none;
 
-  touch-action: pan-y;
+  touch-action: pan-y; /* ให้ scroll ลงได้ */
   user-select: none;
   -webkit-user-select: none;
 
-  /* สำคัญ: ให้ z มีความหมาย */
+  /* ✅ ให้ z ทำงานจริง */
   perspective: 900px;
   transform-style: preserve-3d;
+
+  /* ✅ แยก stacking context ของ carousel ออกไป */
+  isolation: isolate;
 }
 
 .card{
@@ -78,7 +86,6 @@
   will-change: filter, opacity;
 }
 
-/* เงาลอยแบบเนียน (ไม่มีกรอบ BG) */
 .card.is-front img{
   filter: drop-shadow(0 16px 26px var(--shadow-b));
   opacity: 1;
@@ -86,21 +93,23 @@
 
 .card.is-back img{
   filter: drop-shadow(0 10px 18px var(--shadow-a));
-  opacity: 0.78;
+  opacity: 0.86;
 }
 
+/* จอเล็กมาก */
 @media (max-width: 360px){
   :root{
-    --car-h: 232px;
-    --card-w: 104px;
-    --card-h: 156px;
+    --car-h: 300px;
+    --card-w: 140px;
+    --card-h: 210px;
   }
 }
 
+/* tablet+ */
 @media (min-width: 768px){
   :root{
-    --car-h: 320px;
-    --card-w: 140px;
-    --card-h: 210px;
+    --car-h: 360px;
+    --card-w: 175px;
+    --card-h: 262px;
   }
 }
