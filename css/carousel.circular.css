@@ -1,37 +1,40 @@
 /* ===============================
    CAROUSEL – CIRCULAR (MOBILE FIRST)
-   Fix:
-   - Bigger cards
-   - Transparent/no frame
-   - Stacking isolated (ไม่ทับ section อื่น)
+   Goals:
+   - Transparent / no frame
+   - Cards bigger
+   - Cards edge-to-edge (tight circle)
+   - Do NOT overlay other sections
    =============================== */
 
 :root{
-  --car-h: 260px;
-  --car-pad: 8px;
+  /* ปรับ 2 ตัวนี้เพื่อ “ขนาดการ์ด” */
+  --card-w: 200px;   /* ✅ ขนาดการ์ด (กว้าง) */
+  --card-h: 300px;   /* ✅ ขนาดการ์ด (สูง) */
 
-  /* ✅ ทำให้ใหญ่ขึ้น */
-  --card-w: 200px;
-  --card-h: 300px;
+  /* ปรับตัวนี้เพื่อ “ความสูงพื้นที่วงหมุน” */
+  --car-h: 340px;    /* ✅ พื้นที่ carousel (สูง) */
 
-  --shadow-a: rgba(15, 23, 42, 0.18);
-  --shadow-b: rgba(15, 23, 42, 0.24);
+  /* เงา */
+  --shadow-front: rgba(15, 23, 42, 0.28);
+  --shadow-back:  rgba(15, 23, 42, 0.18);
 }
 
 .carousel{
   position: relative;
   width: 100%;
-  max-width: 100vw;
+  max-width: 100%;
   height: var(--car-h);
-  padding: var(--car-pad);
   overflow: hidden;
 
+  /* ✅ transparent / no frame */
   background: transparent;
   border: 0;
   box-shadow: none;
 
-  /* ✅ จำกัดโลกของมัน ไม่ไปทับ section อื่น */
+  /* ✅ กันไปทับ section อื่น */
   z-index: 0;
+  margin-bottom: 18px;
 }
 
 .ring,
@@ -40,19 +43,22 @@
   width: 100%;
   height: 100%;
 
+  /* ✅ transparent / no frame */
   background: transparent;
   border: 0;
   box-shadow: none;
 
-  touch-action: pan-y; /* ให้ scroll ลงได้ */
+  /* ✅ ให้ scroll ลงได้ถ้าปัดแนวตั้ง */
+  touch-action: pan-y;
+
   user-select: none;
   -webkit-user-select: none;
 
-  /* ✅ ให้ z ทำงานจริง */
+  /* ✅ 3D */
   perspective: 900px;
   transform-style: preserve-3d;
 
-  /* ✅ แยก stacking context ของ carousel ออกไป */
+  /* ✅ แยก stacking context ไม่ให้ทับของอื่น */
   isolation: isolate;
 }
 
@@ -69,8 +75,8 @@
   border: 0;
   padding: 0;
   margin: 0;
-
   border-radius: 26px;
+
   overflow: visible;
   cursor: pointer;
 
@@ -86,33 +92,31 @@
   will-change: filter, opacity;
 }
 
+/* เบลอหลัง “นิดเดียว” */
 .card.is-front img{
-  filter: drop-shadow(0 16px 26px var(--shadow-b));
+  filter: blur(0px) drop-shadow(0 18px 28px var(--shadow-front));
   opacity: 1;
 }
 
 .card.is-back img{
-  filter: drop-shadow(0 10px 18px var(--shadow-a));
-  opacity: 0.86;
+  filter: blur(0.7px) drop-shadow(0 10px 18px var(--shadow-back));
+  opacity: 0.78;
 }
 
 /* จอเล็กมาก */
 @media (max-width: 360px){
   :root{
-    --car-h: 300px;
-    --card-w: 140px;
-    --card-h: 210px;
+    --card-w: 170px;
+    --card-h: 255px;
+    --car-h: 310px;
   }
 }
 
 /* tablet+ */
 @media (min-width: 768px){
   :root{
-    --car-h: 360px;
-    --card-w: 175px;
-    --card-h: 262px;
+    --card-w: 210px;
+    --card-h: 315px;
+    --car-h: 380px;
   }
 }
-
-
-
