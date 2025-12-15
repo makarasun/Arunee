@@ -1,100 +1,193 @@
-/* carousel.circular.js – mobile tuned */
+/* =========================================================
+   carousel.circular.js (MOBILE FIRST)
+   - Infinite circular ring (no auto spin)
+   - User drag/swipe with inertia (smooth +10%)
+   - Front card sharpest, back slightly blurred
+   - Strictly confined inside .carousel (no overlay whole page)
+   ========================================================= */
+
 (() => {
   const ring = document.querySelector("#ring");
   if (!ring) return;
 
   const cards = Array.from(ring.querySelectorAll(".card"));
-  const N = cards.length || 6;
+  if (!cards.length) return;
 
-  // === MOBILE TUNE ===
-  const RADIUS = 42;          // ระยะโค้ง (ชิดขึ้น = เลขน้อยลง)
-  const Z_DEPTH = 240;        // ระยะลึก (ลดลง = ไม่พุ่งออกจอ)
-  const MAX_BLUR = 2.2;       // เบลอหลัง “นิดหน่อย” ตามที่มึงขอ
-  const FRONT_SCALE = 1.0;    // ไม่ขยายเพิ่มแล้ว
-  const BACK_SCALE = 0.78;    // ใบหลังเล็กลงพอดูเป็นวง
-  const FRICTION = 0.92;      // ลื่นขึ้น ~10% (ใกล้ 1 = ลื่น/ไหลนานขึ้น)
+  // ---- TUNING (มือถือเป็นหลัก)
+  const STATE = {
+    angle: 0,          // radians
+    vel: 0,            // angular velocity
+    dragging: false,
+    lastX: 0,
+    lastT: 0,
+    raf: 0,
+  };
 
-  let angle = 0;
-  let vel = 0;
-  let dragging = false;
-  let lastX = 0;
+  // “ลื่นขึ้น 10%” = ลดแรงเสียดทานลงนิด
+  const FRICTION = 0.92;       // (ยิ่งใกล้ 1 ยิ่งลื่น)
+  const STOP_EPS = 0.00012;
 
-  function clamp01(v){ return Math.max(0, Math.min(1, v)); }
+  // ระยะ ring: คุมไม่ให้ล้นจอ
+  function getLayout() {
+    const box = ring.getBoundingClientRect();
+    const w = box.width;
+    const h = box.height;
 
-  function layout() {
+    // ขนาดการ์ด (อ่านจาก CSS ถ้ามี)
+    const sample = cards[0].getBoundingClientRect();
+    const cardW = sample.width || 112;
+    const cardH = sample.height || 168;
+
+    // radius = ให้การ์ด “ขอบติดขอบ” บนวง (ตาม chord length)
+    // chord ≈ 2R sin(pi/N) ~ cardW  => R ~ cardW / (2 sin(pi/N))
+    const N = cards.length;
+    const minR = (cardW / (2 * Math.sin(Math.PI / N))) * 0.92; // 0.92 = ชิดเพิ่ม
+    const maxR = Math.min(w, h) * 0.33;                        // clamp กันล้น
+    const R = Math.max(44, Math.min(minR, maxR));
+
+    // depth (z) ไม่แรง
+    const Z = Math.max(42, Math.min(90, R * 1.05));
+
+    return { w, h, cardW, cardH, R, Z, N };
+  }
+
+  // map helper
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const clamp01 = (t) => Math.max(0, Math.min(1, t));
+
+  function render() {
+    const { R, Z, N } = getLayout();
+
+    // มุมห่างแต่ละใบ
+    const step = (Math.PI * 2) / N;
+
+    let bestIdx = 0;
+    let bestZ = -999;
+
     for (let i = 0; i < N; i++) {
-      const a = angle + (i * (Math.PI * 2 / N));
+      const th = STATE.angle + i * step;
 
-      // x = โค้งซ้ายขวา, z = ลึกหน้า/หลัง
-      const x = Math.sin(a) * RADIUS;
-      const z = Math.cos(a) * -Z_DEPTH;
+      // วงกลมบนแกน XZ (ตั้งตรงทุกใบ)
+      const x = Math.sin(th) * R;
+      const z = Math.cos(th) * Z; // front = cos(th) ~ 1
 
-      // depth: 1 = หน้า, 0 = หลัง
-      const depth01 = (Math.cos(a) + 1) / 2;
-
-      const scale = BACK_SCALE + (FRONT_SCALE - BACK_SCALE) * depth01;
-
-      // เบลอหลังนิดหน่อย
-      const blur = (1 - depth01) * MAX_BLUR;
-
-      // opacity ให้คุมไว้ (ห้ามติดลบ)
-      const opacity = 0.45 + depth01 * 0.55;
-
-      // z-index ให้ “ใบหน้า” อยู่บนสุดแน่นอน
-      const zIndex = Math.floor(100 + depth01 * 100);
-
-      const el = cards[i];
-      el.style.transform =
-        `translate(-50%, -50%) translate3d(${x}px, 0px, ${z}px) scale(${scale})`;
-      el.style.filter = `blur(${blur}px)`;
-      el.style.opacity = `${clamp01(opacity)}`;
-      el.style.zIndex = `${zIndex}`;
-    }
-  }
-
-  function onDown(e){
-    dragging = true;
-    vel = 0;
-    lastX = (e.touches ? e.touches[0].clientX : e.clientX);
-  }
-
-  function onMove(e){
-    if (!dragging) return;
-    const x = (e.touches ? e.touches[0].clientX : e.clientX);
-    const dx = x - lastX;
-    lastX = x;
-
-    // ทิศปัด: ปัดขวา = หมุนไปทางขวา (ถ้ามึงอยากกลับทาง แค่ใส่ -dx)
-    const delta = dx * 0.012;
-    angle += delta;
-    vel = delta;
-    layout();
-  }
-
-  function onUp(){
-    dragging = false;
-  }
-
-  function tick(){
-    if (!dragging) {
-      // inertia
-      vel *= FRICTION;
-      if (Math.abs(vel) > 0.00005) {
-        angle += vel;
-        layout();
+      if (z > bestZ) {
+        bestZ = z;
+        bestIdx = i;
       }
+
+      // normalize z => [0..1]
+      const t = clamp01((z / Z + 1) / 2);
+
+      // scale/blur/opacity แบบ “ไม่โหด”
+      const scale = lerp(0.78, 0.98, t);
+      const blurPx = lerp(2.0, 0.0, t);
+      const opacity = lerp(0.72, 1.0, t);
+
+      // z-index ให้หน้าเด้งสุด
+      const zIndex = 1000 + Math.round(t * 200);
+
+      // NOTE: translate(-50%,-50%) มีอยู่ใน CSS transform base แล้ว
+      // ที่นี่เรายัด transform ทั้งก้อนเพื่อคุมแน่น
+      cards[i].style.transform =
+        `translate(-50%, -50%) translate3d(${x.toFixed(2)}px, 0px, ${(-z).toFixed(2)}px) scale(${scale.toFixed(3)})`;
+
+      cards[i].style.filter = `blur(${blurPx.toFixed(2)}px)`;
+      cards[i].style.opacity = opacity.toFixed(3);
+      cards[i].style.zIndex = String(zIndex);
+
+      cards[i].classList.remove("is-front", "is-back");
+      cards[i].classList.add(t > 0.84 ? "is-front" : "is-back");
     }
-    requestAnimationFrame(tick);
+
+    // ทำให้ใบหน้าคลาส front แน่นอน
+    cards.forEach((c, idx) => {
+      if (idx === bestIdx) {
+        c.classList.add("is-front");
+        c.classList.remove("is-back");
+      }
+    });
   }
 
-  ring.addEventListener("mousedown", onDown);
-  window.addEventListener("mousemove", onMove);
-  window.addEventListener("mouseup", onUp);
+  // ---- Drag controls (ทิศปัดให้ “เป็นธรรมชาติ”)
+  // ปัดซ้าย -> ไปการ์ดถัดไปทางขวา (มุมเพิ่ม/ลดตามที่สบายตา)
+  // ถ้ามึงอยากกลับทิศอีกที: แค่สลับ sign ใน dxToAngle()
+  function dxToAngle(dx) {
+    const { R } = getLayout();
+    // R ใหญ่ = หมุนช้าลง, R เล็ก = หมุนไวขึ้น
+    // sign ตรงนี้คือ “ทิศปัด”
+    return -(dx / Math.max(60, R * 2.2));
+  }
 
-  ring.addEventListener("touchstart", onDown, { passive: true });
-  ring.addEventListener("touchmove", onMove, { passive: true });
-  ring.addEventListener("touchend", onUp, { passive: true });
+  function onDown(clientX) {
+    STATE.dragging = true;
+    STATE.lastX = clientX;
+    STATE.lastT = performance.now();
+    STATE.vel = 0; // ดับ inertia เก่า
+    cancelAnimationFrame(STATE.raf);
+  }
 
-  layout();
-  tick();
+  function onMove(clientX) {
+    if (!STATE.dragging) return;
+    const now = performance.now();
+    const dx = clientX - STATE.lastX;
+    const dt = Math.max(8, now - STATE.lastT);
+
+    const da = dxToAngle(dx);
+    STATE.angle += da;
+
+    // velocity for inertia
+    STATE.vel = da / (dt / 16.67);
+
+    STATE.lastX = clientX;
+    STATE.lastT = now;
+
+    render();
+  }
+
+  function onUp() {
+    if (!STATE.dragging) return;
+    STATE.dragging = false;
+
+    // inertia loop
+    const tick = () => {
+      STATE.vel *= FRICTION;
+
+      if (Math.abs(STATE.vel) < STOP_EPS) {
+        STATE.vel = 0;
+        render();
+        return;
+      }
+
+      STATE.angle += STATE.vel;
+      render();
+      STATE.raf = requestAnimationFrame(tick);
+    };
+
+    STATE.raf = requestAnimationFrame(tick);
+  }
+
+  // Pointer events
+  ring.addEventListener("pointerdown", (e) => {
+    ring.setPointerCapture?.(e.pointerId);
+    onDown(e.clientX);
+  });
+
+  ring.addEventListener("pointermove", (e) => onMove(e.clientX));
+  ring.addEventListener("pointerup", onUp);
+  ring.addEventListener("pointercancel", onUp);
+  ring.addEventListener("pointerleave", () => {
+    // กันลากแล้วนิ้วหลุดออกนอก ring
+    if (STATE.dragging) onUp();
+  });
+
+  // first paint
+  render();
+
+  // re-render on resize/orientation
+  let resizeTO = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTO);
+    resizeTO = setTimeout(() => render(), 80);
+  });
 })();
