@@ -1,23 +1,23 @@
 /* ===============================
-   CAROUSEL – CIRCULAR (MOBILE FIRST)
+   CAROUSEL - CIRCULAR (MOBILE FIRST)
    Goals:
    - Transparent / no frame
-   - Cards bigger
+   - Cards bigger (เล็กน้อย) แต่ลุคเดิม
    - Cards edge-to-edge (tight circle)
    - Do NOT overlay other sections
    =============================== */
 
 :root{
-  /* ปรับ 2 ตัวนี้เพื่อ “ขนาดการ์ด” */
-  --card-w: 200px;   /* ✅ ขนาดการ์ด (กว้าง) */
-  --card-h: 300px;   /* ✅ ขนาดการ์ด (สูง) */
+  /* ขนาดการ์ด (mobile first) - ขยายเล็กน้อย */
+  --card-w: 230px;
+  --card-h: 340px;
 
-  /* ปรับตัวนี้เพื่อ “ความสูงพื้นที่วงหมุน” */
-  --car-h: 340px;    /* ✅ พื้นที่ carousel (สูง) */
+  /* ความสูงคอนเทนเนอร์ */
+  --car-h: 440px;
 
   /* เงา */
-  --shadow-front: rgba(15, 23, 42, 0.28);
-  --shadow-back:  rgba(15, 23, 42, 0.18);
+  --shadow-front: rgba(15, 23, 42, 0.24);
+  --shadow-back:  rgba(15, 23, 42, 0.16);
 }
 
 .carousel{
@@ -27,12 +27,12 @@
   height: var(--car-h);
   overflow: hidden;
 
-  /* ✅ transparent / no frame */
+  /* transparent / no frame */
   background: transparent;
   border: 0;
   box-shadow: none;
 
-  /* ✅ กันไปทับ section อื่น */
+  /* กันทับ section อื่น */
   z-index: 0;
   margin-bottom: 18px;
 }
@@ -43,22 +43,22 @@
   width: 100%;
   height: 100%;
 
-  /* ✅ transparent / no frame */
+  /* transparent / no frame */
   background: transparent;
   border: 0;
   box-shadow: none;
 
-  /* ✅ ให้ scroll ลงได้ถ้าปัดแนวตั้ง */
+  /* ปล่อย scroll แกน Y */
   touch-action: pan-y;
 
   user-select: none;
   -webkit-user-select: none;
 
-  /* ✅ 3D */
+  /* 3D */
   perspective: 900px;
   transform-style: preserve-3d;
 
-  /* ✅ แยก stacking context ไม่ให้ทับของอื่น */
+  /* คุม stacking context */
   isolation: isolate;
 }
 
@@ -83,40 +83,81 @@
   will-change: transform;
 }
 
-.card img{
+.card-preview{
+  position:absolute;
+  left:12%;
+  right:12%;
+  bottom:12%;
+  top:44%;
+  border-radius:18px;
+  overflow:hidden;
+  background: rgba(255,255,255,0.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.35),
+    inset 0 -6px 14px rgba(15,23,42,0.12),
+    0 8px 18px rgba(15,23,42,0.10);
+  pointer-events:none;
+}
+
+.card-preview img,
+.card-preview video{
+  width:100%;
+  height:100%;
+  object-fit: cover;
+  display:block;
+  border-radius:18px;
+}
+
+.card img,
+.card video{
+  position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
   display: block;
   border-radius: 26px;
+  object-fit: cover;
   pointer-events: none;
   will-change: filter, opacity;
 }
 
-/* เบลอหลัง “นิดเดียว” */
+.card-preview{
+  z-index: 1;
+}
+
+/* การ์ดหน้า */
 .card.is-front img{
-  filter: blur(0px) drop-shadow(0 18px 28px var(--shadow-front));
+  filter: blur(0px) drop-shadow(0 14px 28px var(--shadow-front));
   opacity: 1;
 }
 
 .card.is-back img{
   filter: blur(0.7px) drop-shadow(0 10px 18px var(--shadow-back));
-  opacity: 0.78;
+  opacity: 0.8;
 }
 
-/* จอเล็กมาก */
+/* mobile จอเล็ก */
 @media (max-width: 360px){
   :root{
-    --card-w: 170px;
-    --card-h: 255px;
-    --car-h: 310px;
+    --card-w: 200px;
+    --card-h: 300px;
+    --car-h: 380px;
   }
 }
 
 /* tablet+ */
 @media (min-width: 768px){
   :root{
-    --card-w: 210px;
-    --card-h: 315px;
-    --car-h: 380px;
+    --card-w: 240px;
+    --card-h: 360px;
+    --car-h: 480px;
+  }
+}
+
+@media (min-width: 1100px){
+  :root{
+    --card-w: 260px;
+    --card-h: 390px;
+    --car-h: 520px;
   }
 }

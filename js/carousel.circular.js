@@ -1,10 +1,8 @@
 /* =========================================================
    carousel.circular.js (MOBILE FIRST)
-   Fix:
-   - ✅ no snap (หมุนอิสระ)
-   - ✅ stable ring geometry (ไม่หด/ไม่กองมั่วตอนปล่อย)
-   - ✅ drag เฉพาะ “แนวนอนจริง” (ยัง scroll ลงได้)
-   - ✅ front card ชัด / back blur นิดเดียว
+   - 6 cards arranged in a circle (3D)
+   - Drag / swipe / wheel to spin (momentum)
+   - Tap card pops forward + dispatches selection event
    ========================================================= */
 
 (() => {
@@ -29,28 +27,30 @@
     lastT: 0,
 
     raf: 0,
+    activeIdx: 0,
+    justDragged: false,
   };
 
   // ---------------------------
-  // TUNE (ลื่น + คุมไม่ให้มั่ว)
+  // TUNE
   // ---------------------------
-  const FRICTION = 0.915;   // ✅ ลื่นขึ้น ~10%
-  const STOP_EPS = 0.0002;
-  const MAX_VEL = 0.18;     // ✅ กันพุ่งมั่ว
-  const DRAG_GATE = 9;      // ต้องแนวนอนชัดก่อนถึงจะลาก
-  const SENS = 1.0;         // ✅ ปรับความไวรวม (1.0 = กลางๆ)
+  const FRICTION = 0.93;
+  const STOP_EPS = 0.0012;
+  const MAX_VEL = 0.24;
+  const DRAG_GATE = 8;
+  const SENS = 1.18;
 
   // ---------------------------
-  // LAYOUT (LOCKED, ไม่คำนวณใหม่ทุกเฟรม)
+  // LAYOUT
   // ---------------------------
   const L = {
     N: cards.length,
     step: (Math.PI * 2) / cards.length,
-    R: 160,
-    Z: 140,
+    R: 180,
+    Z: 150,
     w: 0,
     h: 0,
-    cardW: 200,
+    cardW: 210,
   };
 
   function pxVar(name, fallback){
@@ -64,18 +64,16 @@
     L.w = box.width;
     L.h = box.height;
 
-    // ✅ เอาขนาดจาก CSS var (นิ่ง) ไม่ใช่วัดจาก transform แล้วแกว่ง
-    L.cardW = pxVar("--card-w", 200);
+    L.cardW = pxVar("--card-w", 210);
 
-    // edge-to-edge: chord length = cardW ≈ 2R sin(pi/N) => R = cardW / (2 sin(pi/N))
+    // edge-to-edge: chord length = cardW / (2 sin(pi/N))
     const R_ideal = L.cardW / (2 * Math.sin(Math.PI / L.N));
 
-    // จำกัดให้เข้ากับ container
-    const R_max = Math.max(90, Math.min(L.w, L.h) * 0.34);
-    L.R = Math.max(90, Math.min(R_ideal, R_max));
+    const dim = Math.max(260, Math.min(L.w, L.h));
+    const R_max = Math.max(150, dim * 0.6);
+    L.R = Math.max(140, Math.min(R_ideal, R_max));
 
-    // depth
-    const Z_max = Math.min(220, Math.max(110, L.R * 0.85));
+    const Z_max = Math.min(280, Math.max(150, L.R * 0.92));
     L.Z = Z_max;
   }
 
@@ -93,19 +91,19 @@
       const th = S.angle + i * L.step;
 
       const x = Math.sin(th) * L.R;
-      const z = Math.cos(th) * L.Z; // z มาก = หน้า
+      const z = Math.cos(th) * L.Z;
 
       if (z > bestZ){ bestZ = z; bestIdx = i; }
 
       const t = clamp01((z / L.Z + 1) / 2);
+      const isActive = i === S.activeIdx;
 
-      // หน้าใหญ่ขึ้นนิด หลังเล็กลงนิด (ดูมีมิติ แต่ไม่หาย)
-      const scale = lerp(0.90, 1.06, t);
-      const blur  = lerp(0.7, 0.0, t);
-      const op    = lerp(0.76, 1.0, t);
+      let scale = lerp(0.96, 1.09, t);
+      const blur  = lerp(0.5, 0.0, t);
+      const op    = lerp(0.84, 1.0, t);
+      if (isActive) scale *= 1.04;
 
-      // z-index เฉพาะใน carousel
-      const zIndex = 1 + Math.round(t * 40);
+      const zIndex = 4 + Math.round(t * 36);
 
       const el = cards[i];
       el.style.transform =
@@ -121,11 +119,11 @@
         el.style.opacity = op.toFixed(3);
       }
 
-      el.classList.toggle("is-front", t > 0.88);
-      el.classList.toggle("is-back",  t <= 0.88);
+      el.classList.toggle("is-front", t > 0.92);
+      el.classList.toggle("is-back",  t <= 0.92);
+      el.classList.toggle("is-active", isActive);
     }
 
-    // บังคับใบหน้าสุดชัด 100%
     const front = cards[bestIdx];
     front.classList.add("is-front");
     front.classList.remove("is-back");
@@ -138,20 +136,22 @@
       front.style.filter = "blur(0px)";
       front.style.opacity = "1";
     }
+
+    if (typeof S.activeIdx !== "number") S.activeIdx = bestIdx;
   }
 
   // ---------------------------
-  // INPUT → ANGLE
+  // INPUT -> ANGLE
   // ---------------------------
   function dxToAngle(dx){
-    // “ธรรมชาติ”: ปัดขวา => วงหมุนไปทางขวา (ถ้ายังกลับทาง คูณ -1 ตรงนี้)
-    const denom = Math.max(220, L.R * 2.4);
-    return -(dx / denom) * SENS;
+    const denom = Math.max(L.cardW * 1.05, L.R * 2.1);
+    return (dx / denom) * SENS; // หมุนตรงตามทิศการปัด
   }
 
   function onDown(e){
     S.down = true;
     S.dragging = false;
+    S.justDragged = false;
 
     S.startX = e.clientX;
     S.startY = e.clientY;
@@ -168,13 +168,12 @@
     const dx0 = e.clientX - S.startX;
     const dy0 = e.clientY - S.startY;
 
-    // ยังไม่ลาก จนกว่าจะ “ชัดว่าแนวนอน”
     if (!S.dragging){
       if (Math.abs(dx0) > Math.abs(dy0) + DRAG_GATE){
         S.dragging = true;
         ring.setPointerCapture?.(e.pointerId);
       } else {
-        return; // ปล่อยให้ scroll page
+        return;
       }
     }
 
@@ -197,30 +196,74 @@
     render();
   }
 
+  function spin(){
+    const tick = () => {
+      S.vel *= FRICTION;
+      if (Math.abs(S.vel) < STOP_EPS){
+        S.vel = 0;
+        render();
+        return;
+      }
+      S.angle += S.vel;
+      render();
+      S.raf = requestAnimationFrame(tick);
+    };
+    S.raf = requestAnimationFrame(tick);
+  }
+
   function onUp(){
     if (!S.down) return;
     S.down = false;
 
     if (!S.dragging){
-      return; // tap / scroll
+      return;
     }
 
     S.dragging = false;
+    S.justDragged = true;
+    spin();
+  }
 
-    const tick = () => {
-      S.vel *= FRICTION;
+  function onWheel(e){
+    e.preventDefault?.();
+    const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    const da = dxToAngle(delta * 0.7);
+    S.angle += da;
+    S.vel = Math.max(-MAX_VEL, Math.min(MAX_VEL, da));
+    render();
+    spin();
+  }
 
-      if (Math.abs(S.vel) < STOP_EPS){
-        S.vel = 0;
-        return; // ✅ no snap
-      }
+  function snapToIndex(idx){
+    if (idx < 0 || idx >= L.N) return;
+    const target = -idx * L.step;
+    const tau = Math.PI * 2;
+    let diff = (target - S.angle) % tau;
+    if (diff > Math.PI) diff -= tau;
+    if (diff < -Math.PI) diff += tau;
+    S.angle += diff;
+    S.activeIdx = idx;
+    render();
+  }
 
-      S.angle += S.vel;
-      render();
-      S.raf = requestAnimationFrame(tick);
-    };
+  function emitSelect(idx, via){
+    const card = cards[idx];
+    if (!card) return;
+    const key = card.getAttribute("data-key");
+    window.dispatchEvent(new CustomEvent("carousel:select", { detail: { key, index: idx, via } }));
+  }
 
-    S.raf = requestAnimationFrame(tick);
+  function onClick(e){
+    if (S.dragging || S.justDragged) {
+      S.justDragged = false;
+      return;
+    }
+    const card = e.target.closest(".card");
+    if (!card) return;
+    const idx = cards.indexOf(card);
+    if (idx < 0) return;
+    snapToIndex(idx);
+    emitSelect(idx, "tap");
   }
 
   // ---------------------------
@@ -234,6 +277,8 @@
   ring.addEventListener("pointerup", onUp, { passive: true });
   ring.addEventListener("pointercancel", onUp, { passive: true });
   ring.addEventListener("pointerleave", () => { if (S.down) onUp(); }, { passive: true });
+  ring.addEventListener("click", onClick);
+  ring.addEventListener("wheel", onWheel, { passive: false });
 
   let to = 0;
   window.addEventListener("resize", () => {

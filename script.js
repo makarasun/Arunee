@@ -1,10 +1,5 @@
 /* =========================================================
-   Tangmo Neumo v3 (stable)
-   - Intro skip always works
-   - Random greeting after intro (1 time)
-   - Mic toggle: tap to start / tap to stop (SpeechRecognition)
-   - Calls /api/chat and /api/tts
-   - Better error handling (no repeating “ระบบมีปัญหา” spam)
+   Tangmo Neumo v3 (carousel + media viewer + voice + chat)
 ========================================================= */
 
 const $ = (q) => document.querySelector(q);
@@ -13,197 +8,329 @@ const introEl = $("#intro");
 const introSkip = $("#intro-skip");
 
 const micBtn = $("#micBtn");
-const ttsToggle = $("#ttsToggle");
+const ttsToggle = $("#ttsToggle"); // ใช้เป็นสวิตช์เปิด/ปิด chat board
 const imgInput = $("#imgInput");
 
 const bgImg = $("#bg-image");
 
+const viewer = $("#viewer");
 const viewerTitle = $("#viewerTitle");
 const viewerDesc = $("#viewerDesc");
 const viewerImg = $("#viewerImg");
+const viewerVideo = $("#viewerVideo");
+const viewerFullBtn = $("#viewerFull");
 const thumbsEl = $("#thumbs");
 
 const ring = $("#ring");
 const cards = Array.from(document.querySelectorAll(".card"));
 
-const chatEl = $("#chat");
+const chatSection = $("#chat");
 const chatLog = $("#chatLog");
 
-// ---- Gallery data (ใส่ของจริงทีหลังได้)
-const GALLERY = {
+// ---------------------------
+// Services + media mapping
+// ---------------------------
+const SERVICES = {
   curtain: {
-    title: "ผ้าม่าน / มู่ลี่",
-    desc: "เหมาะบ้าน คอนโด สำนักงาน — เลือกผ้า/โทนตามแสงและการใช้งาน",
-    bg: "./curtain-bg1.jpg",
-    items: ["./curtain-bg1.jpg"]
+    title: "งานผ้าม่าน",
+    desc: "ผ้าม่านและผ้าเลเยอร์ เลือกผ้า โทน และแพทเทิร์นตาม mood",
+    folder: "/assets/gallery/curtain"
   },
-  wallpaper: {
-    title: "วอลเปเปอร์",
-    desc: "เพิ่มมิติให้ผนัง ทำให้ห้องดูแพงแบบไม่ต้องพูดเยอะ",
-    bg: "./wall-BG1.jpg",
-    items: ["./wall-BG1.jpg", "./wall-BG2.jpg"]
+  wall: {
+    title: "งานผนัง / วอลล์",
+    desc: "วอลล์เปเปอร์ ผนังตกแต่ง และพื้นผิวที่เข้ากับพื้นที่ใช้งาน",
+    folder: "/assets/gallery/wall"
   },
-  blind: {
-    title: "ม่านปรับแสง",
-    desc: "เรียบร้อย ดูแลง่าย เหมาะกับพื้นที่ต้องการความเป็นระเบียบ",
-    bg: "./wall-BG2.jpg",
-    items: ["./wall-BG2.jpg"]
+  design: {
+    title: "งานออกแบบ",
+    desc: "งานออกแบบ moodboard / concept / visualization",
+    folder: "/assets/gallery/design"
   },
   floor: {
-    title: "พื้น / พรม",
-    desc: "ช่วยจัดโซน เพิ่มสัมผัส สบายเท้า และคุมโทนทั้งห้อง",
-    bg: "./wall-BG1.jpg",
-    items: ["./wall-BG1.jpg"]
+    title: "งานพื้น",
+    desc: "วัสดุปูพื้นหลายชนิด เลือกลายและสัมผัสที่เหมาะกับสไตล์",
+    folder: "/assets/gallery/floor"
   },
-  fabric: {
-    title: "ผ้า / วัสดุ",
-    desc: "Texture + โทน ทำให้ mood ห้องมาไวแบบไม่ต้อง renovate",
-    bg: "./curtain-bg1.jpg",
-    items: ["./curtain-bg1.jpg"]
+  install: {
+    title: "งานติดตั้ง",
+    desc: "ก่อน-ระหว่าง-หลังการติดตั้ง ขั้นตอนควบคุมคุณภาพ",
+    folder: "/assets/gallery/install"
   },
-  service: {
-    title: "ติดตั้ง / หน้างาน",
-    desc: "วัด-ติดตั้ง-เก็บงาน เน้นเรียบร้อย งานจบจริง",
-    bg: "./wall-BG2.jpg",
-    items: ["./wall-BG2.jpg"]
+  aftercare: {
+    title: "งานหลังการขาย",
+    desc: "บริการหลังติดตั้งและการดูแลรักษา",
+    folder: "/assets/gallery/aftercare"
   }
 };
 
+// Known media seeds + auto discovery
+const KNOWN_MEDIA = {
+  curtain: [
+    { type: "image", src: "/assets/gallery/curtain/curtain-bg1.jpg", thumb: "/assets/gallery/curtain/curtain-bg1.jpg" }
+  ],
+  wall: [
+    { type: "image", src: "/assets/gallery/wall/wall-BG1.jpg", thumb: "/assets/gallery/wall/wall-BG1.jpg" }
+  ],
+  design: [
+    { type: "image", src: "/assets/gallery/design/sample-1.jpg", thumb: "/assets/gallery/design/sample-1-thumb.jpg" }
+  ],
+  floor: [
+    { type: "image", src: "/assets/gallery/floor/floor-BG1.jpg", thumb: "/assets/gallery/floor/floor-BG1.jpg" }
+  ],
+  install: [
+    { type: "image", src: "/assets/gallery/install/install-BG1.jpg", thumb: "/assets/gallery/install/install-BG1.jpg" }
+  ],
+  aftercare: [
+    { type: "image", src: "/assets/gallery/aftercare/aftercar-BG1.jpg", thumb: "/assets/gallery/aftercare/aftercar-BG1.jpg" }
+  ]
+};
+
+const mediaCache = {};
+const IMG_EXTS = ["jpg", "jpeg", "png", "webp"];
+const VID_EXTS = ["mp4", "webm"];
 let selectedKey = "curtain";
 
-// =========================================================
+function toastOnce(msg) {
+  const now = Date.now();
+  if (!toastOnce.last) toastOnce.last = 0;
+  if (now - toastOnce.last < 5000) return;
+  toastOnce.last = now;
+  console.warn(msg);
+}
+
+// -------------------------------------------------------
 // Intro
-// =========================================================
+// -------------------------------------------------------
 function hideIntro() {
   if (!introEl) return;
   introEl.classList.add("hidden");
-  // หลังข้าม intro -> ให้ Tangmo พูดต้อนรับ 1 ครั้ง
   sayOpeningOnce();
 }
-
 if (introSkip) introSkip.addEventListener("click", hideIntro);
-// กันพลาด: แตะพื้นก็ข้ามได้ (ช่วยตอนปุ่มโดนอะไรกดไม่ติด)
 if (introEl) introEl.addEventListener("click", (e) => {
   if (e.target === introEl) hideIntro();
 });
 
-// =========================================================
-// Background sync with selected category
-// =========================================================
+// -------------------------------------------------------
+// Media helpers
+// -------------------------------------------------------
+async function headOK(url) {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    return res.ok;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function findWithExts(base, name, exts) {
+  for (const ext of exts) {
+    const url = `${base}/${name}.${ext}`;
+    if (await headOK(url)) return url;
+  }
+  return null;
+}
+
+async function discoverPattern(folder, prefix, isVideo) {
+  const maxTry = 10;
+  const exts = isVideo ? VID_EXTS : IMG_EXTS;
+  const out = [];
+  for (let i = 1; i <= maxTry; i++) {
+    const main = await findWithExts(folder, `${prefix}-${i}`, exts);
+    if (!main) continue;
+    const thumb = await findWithExts(folder, `${prefix}-${i}-thumb`, IMG_EXTS);
+    out.push({ type: isVideo ? "video" : "image", src: main, thumb: thumb || main });
+  }
+  return out;
+}
+
+function dedupeMedia(list) {
+  const seen = new Set();
+  return list.filter((m) => {
+    if (!m?.src) return false;
+    const k = m.src;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    if (!m.thumb) m.thumb = m.src;
+    return true;
+  });
+}
+
+async function ensureMedia(key) {
+  if (mediaCache[key]) return mediaCache[key];
+  const cfg = SERVICES[key];
+  if (!cfg) return [];
+
+  const seed = KNOWN_MEDIA[key] ? [...KNOWN_MEDIA[key]] : [];
+  // fallback auto-discovery
+  const autos = await discoverPattern(cfg.folder, "sample", false);
+  const autosV = await discoverPattern(cfg.folder, "vsample", true);
+
+  const merged = dedupeMedia([...seed, ...autos, ...autosV]);
+  mediaCache[key] = merged;
+  return merged;
+}
+
 function setBackground(src) {
   if (!bgImg) return;
   bgImg.src = src || "";
 }
 
-function renderViewer(key) {
-  const data = GALLERY[key] || GALLERY.curtain;
-  selectedKey = key;
+// -------------------------------------------------------
+// Viewer render
+// -------------------------------------------------------
+function showMedia(item) {
+  if (!item) return;
+  if (item.type === "video") {
+    viewerImg.classList.add("hidden");
+    viewerVideo.classList.remove("hidden");
+    viewerVideo.src = item.src;
+    viewerVideo.poster = item.thumb || "";
+    viewerVideo.loop = true;
+    viewerVideo.muted = true;
+    viewerVideo.play().catch(() => {});
+  } else {
+    viewerVideo.pause?.();
+    viewerVideo.classList.add("hidden");
+    viewerImg.classList.remove("hidden");
+    viewerImg.src = item.src;
+  }
+}
 
-  viewerTitle.textContent = data.title;
-  viewerDesc.textContent = data.desc;
-
-  setBackground(data.bg);
-
-  // main image
-  viewerImg.src = (data.items && data.items[0]) ? data.items[0] : data.bg;
-
-  // thumbs
+function renderThumbs(list) {
+  if (!thumbsEl) return;
   thumbsEl.innerHTML = "";
-  (data.items || []).forEach((src) => {
+  list.forEach((item, idx) => {
     const b = document.createElement("button");
     b.className = "thumb";
     b.type = "button";
-    b.innerHTML = `<img alt="" src="${src}">`;
+    b.innerHTML = `<img alt="" src="${item.thumb || item.src}" />`;
     b.addEventListener("click", () => {
-      viewerImg.src = src;
-      setBackground(src);
+      thumbsEl.querySelectorAll(".thumb").forEach((t) => t.classList.remove("active"));
+      b.classList.add("active");
+      showMedia(item);
+      setBackground(item.src);
     });
+    if (idx === 0) b.classList.add("active");
     thumbsEl.appendChild(b);
   });
 }
 
-// =========================================================
-// 3D Ring Carousel (vertical cards)
-// =========================================================
-let rotY = 0;
-let dragging = false;
-let lastX = 0;
+function ensureCardPreview(key, mediaList) {
+  const card = cards.find((c) => c.dataset.key === key);
+  if (!card || !mediaList.length) return;
+  let preview = card.querySelector(".card-preview");
+  if (!preview) {
+    preview = document.createElement("div");
+    preview.className = "card-preview";
+    preview.innerHTML = `<video class="hidden" playsinline muted loop></video><img alt="" />`;
+    card.appendChild(preview);
+  }
+  const pvVid = preview.querySelector("video");
+  const pvImg = preview.querySelector("img");
+  const first = mediaList[0];
 
-function layoutRing() {
-  const n = cards.length;
-  const radius = 290; // ความโค้งวงกลม (ปรับได้)
-  const step = 360 / n;
-
-  cards.forEach((card, i) => {
-    const a = (i * step + rotY) * (Math.PI / 180);
-    // zDepth + xShift ให้มันเป็นวงโค้งด้านหน้า
-    const z = Math.cos(a) * radius;
-    const x = Math.sin(a) * radius;
-    const scale = 0.72 + (z / radius) * 0.28; // ใกล้สุดใหญ่สุด
-    const blur = Math.max(0, 10 - (z / radius) * 10); // ใกล้สุด blur ต่ำ
-    const opacity = 0.35 + (z / radius) * 0.65;
-
-    card.style.transform = `translate(-50%,-50%) translate3d(${x}px,0,${z}px) scale(${scale})`;
-    card.style.filter = `blur(${blur * 0.55}px)`;
-    card.style.opacity = `${opacity}`;
-    card.style.zIndex = `${Math.round(1000 + z)}`;
-  });
-}
-
-function pickFrontCard() {
-  // การ์ดที่ z มากสุด = อยู่หน้าสุด
-  let best = cards[0];
-  let bestZ = -Infinity;
-  cards.forEach((c) => {
-    const m = c.style.transform.match(/translate3d\(([-\d.]+)px,0,([-\d.]+)px\)/);
-    if (!m) return;
-    const z = parseFloat(m[2]);
-    if (z > bestZ) { bestZ = z; best = c; }
-  });
-  return best;
-}
-
-function onDragStart(e) {
-  dragging = true;
-  lastX = (e.touches ? e.touches[0].clientX : e.clientX);
-}
-function onDragMove(e) {
-  if (!dragging) return;
-  const x = (e.touches ? e.touches[0].clientX : e.clientX);
-  const dx = x - lastX;
-  lastX = x;
-  rotY += dx * 0.35; // sensitivity
-  layoutRing();
-}
-function onDragEnd() {
-  dragging = false;
-
-  // หลังปล่อย ให้เลือกการ์ดหน้าสุด
-  const front = pickFrontCard();
-  if (front) {
-    const key = front.getAttribute("data-key");
-    if (key) renderViewer(key);
+  if (first.type === "video") {
+    pvVid.src = first.src;
+    pvVid.classList.remove("hidden");
+    pvImg.classList.add("hidden");
+    pvVid.play().catch(() => {});
+  } else {
+    pvImg.src = first.thumb || first.src;
+    pvImg.classList.remove("hidden");
+    pvVid.classList.add("hidden");
   }
 }
 
-ring.addEventListener("mousedown", onDragStart);
-window.addEventListener("mousemove", onDragMove);
-window.addEventListener("mouseup", onDragEnd);
+function seedCardPreviewsFromSeeds(){
+  cards.forEach((c) => {
+    const key = c.dataset.key;
+    const list = KNOWN_MEDIA[key];
+    if (list && list.length) ensureCardPreview(key, list);
+  });
+}
 
-ring.addEventListener("touchstart", onDragStart, { passive: true });
-window.addEventListener("touchmove", onDragMove, { passive: true });
-window.addEventListener("touchend", onDragEnd);
+async function selectService(key, opts = {}) {
+  const cfg = SERVICES[key] || SERVICES.curtain;
+  selectedKey = key;
+  viewerTitle.textContent = cfg.title;
+  viewerDesc.textContent = cfg.desc;
+
+  const media = await ensureMedia(key);
+  const first = media[0];
+  if (first) {
+    setBackground(first.src);
+    showMedia(first);
+  }
+  renderThumbs(media);
+  ensureCardPreview(key, media);
+
+  if (opts.scrollToViewer && viewer) {
+    viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+// Fullscreen toggles
+async function enterFullscreen() {
+  if (!viewer) return;
+  if (document.fullscreenElement) return;
+  try { await viewer.requestFullscreen(); } catch (e) {}
+}
+async function exitFullscreen() {
+  if (!document.fullscreenElement) return;
+  try { await document.exitFullscreen(); } catch (e) {}
+}
+function toggleFullscreen() {
+  if (document.fullscreenElement) exitFullscreen();
+  else enterFullscreen();
+}
+
+// Orientation trigger fullscreen (landscape)
+function setupOrientationFullscreen() {
+  const mql = window.matchMedia("(orientation: landscape)");
+  const handler = (e) => {
+    if (e.matches) enterFullscreen();
+    else exitFullscreen();
+  };
+  mql.addEventListener("change", handler);
+}
+
+// -------------------------------------------------------
+// Chat board toggle (switch)
+// -------------------------------------------------------
+function toggleChatBoard(show) {
+  if (!chatSection) return;
+  chatSection.classList.toggle("show", !!show);
+  chatSection.classList.toggle("hidden", !show);
+}
+if (ttsToggle) {
+  toggleChatBoard(ttsToggle.checked);
+  ttsToggle.addEventListener("change", () => toggleChatBoard(ttsToggle.checked));
+}
+
+// -------------------------------------------------------
+// Carousel sync hooks
+// -------------------------------------------------------
+if (viewerFullBtn) viewerFullBtn.addEventListener("click", toggleFullscreen);
+setupOrientationFullscreen();
+
+// bridge from carousel.circular.js
+window.addEventListener("carousel:select", (e) => {
+  const key = e.detail?.key;
+  if (!key) return;
+  selectService(key, { scrollToViewer: e.detail?.via === "tap" });
+});
 
 cards.forEach((c) => {
   c.addEventListener("click", () => {
     const key = c.getAttribute("data-key");
-    if (key) renderViewer(key);
+    if (key) selectService(key, { scrollToViewer: true });
   });
 });
 
-// init viewer + ring
-renderViewer(selectedKey);
-layoutRing();
+// init viewer + previews
+seedCardPreviewsFromSeeds();
+selectService(selectedKey);
 
 // =========================================================
 // Tangmo voice/chat
@@ -214,20 +341,19 @@ let listening = false;
 let lastErrorToastAt = 0;
 let lastOpeningSpoken = false;
 
-function toastOnce(msg) {
-  const now = Date.now();
-  if (now - lastErrorToastAt < 5000) return; // กัน spam
-  lastErrorToastAt = now;
-  console.warn(msg);
-  // (ยังไม่ทำ UI toast แยกให้รก เดี๋ยวเฟสหน้า)
-}
-
 function appendMsg(role, text) {
   if (!chatLog) return;
   const d = document.createElement("div");
   d.className = `msg ${role === "user" ? "u" : "a"}`;
   d.textContent = text;
   chatLog.appendChild(d);
+  chatLog.scrollTop = chatLog.scrollHeight;
+
+  // เปิด chat board อัตโนมัติ
+  if (ttsToggle) {
+    ttsToggle.checked = true;
+    toggleChatBoard(true);
+  }
 }
 
 async function callChat(userText, imageDataUrl = null) {
@@ -272,25 +398,24 @@ async function sayOpeningOnce() {
   lastOpeningSpoken = true;
 
   const lines = [
-    "สวัสดีค่ะ ที่นี่อรุณีผ้าม่านนะคะ จริง ๆ ทางร้านรับตกแต่งภายในครบวงจรเลยค่ะ เชิญดูเว็บได้สบาย ๆ นะคะ",
-    "สวัสดีค่ะ ยินดีต้อนรับนะคะ ที่ร้านอรุณี เราให้บริการตกแต่งภายใน แบบครบวงจรค่ะ",
-    "สวัสดีค่ะ ที่ร้านอรุณี เราทำผ้าม่าน และแต่งบ้านทั้งหลัง เซฟตังค์ตามงบ ครบและจบในที่เดียวค่า",
-    "สวัสดีค่ะ ยินดีต้อนรับค่ะ ร้านอรุณีผ้าม่าน ร้านตกแต่งภายใน ครบวงจร ร้านแรกที่มี Ai คอยให้บริการนะคะ", 
-    "สวัสดีค่ะ เชิญดูผลงานก่อนได้เลยนะคะ ถ้าอยากถามอะไรค่อยเรียกแตงโม ai ประจำร้าน ถามได้เลยค่ะ"
+    "ยินดีต้อนรับสู่ร้านอรุณี ผ้าม่าน เรามีบริการตกแต่งภายในครบวงจร ตั้งแต่ผ้าม่าน วอลล์ เปเปอร์ พื้น งานออกแบบ และติดตั้ง",
+    "ที่ร้านอรุณี ผ้าม่านไม่ได้มีแค่ผ้าม่านนะคะ เราดูแลงานผนัง พื้น และการออกแบบทั้งหมด เลือกการ์ดที่สนใจได้เลยค่ะ",
+    "ถ้าต้องการคุยไอเดียตกแต่งครบชุด ห้องเดียวจบที่ร้านอรุณี ผ้าม่าน กดปุ่มไมค์แล้วเล่าโจทย์ได้เลยค่ะ",
+    "อยากรู้ตัวอย่างงานผ้าม่าน วอลล์ เปเปอร์ หรือบริการติดตั้งทั้งหมด เลือกการ์ด แล้ว Tangmo จะเล่าให้ฟังนะคะ",
+    "มีรูปหน้างานหรืออยากเห็นงานตกแต่งครบวงจร ส่งรูปขึ้นมาได้เลย Tangmo จากร้านอรุณี ผ้าม่านจะช่วยแนะนำค่ะ"
   ];
   const pick = lines[Math.floor(Math.random() * lines.length)];
 
-  // แค่พูด ไม่ต้องไปถามโมเดล (กันช้า/กันค่าใช้จ่าย)
-  if (ttsToggle.checked) {
-    micBtn.classList.add("speaking");
+  if (ttsToggle?.checked ?? true) {
+    micBtn?.classList.add("speaking");
     await callTTS(pick).catch((e) => toastOnce(e.message));
-    micBtn.classList.remove("speaking");
+    micBtn?.classList.remove("speaking");
   }
 }
 
 function startRec() {
   if (!SpeechRecognition) {
-    toastOnce("เครื่องนี้ไม่รองรับ SpeechRecognition (ลอง Chrome บน Android/desktop)");
+    toastOnce("เบราว์เซอร์นี้ไม่รองรับ SpeechRecognition (แนะนำ Chrome)");
     return;
   }
   if (!rec) {
@@ -312,11 +437,10 @@ function startRec() {
         const reply = await callChat(text);
         appendMsg("assistant", reply);
 
-        if (ttsToggle.checked && reply) {
+        if ((ttsToggle?.checked ?? true) && reply) {
           await callTTS(reply);
         }
       } catch (e) {
-        // อย่า spam ประโยคเดิม ๆ
         toastOnce(e.message || String(e));
       } finally {
         micBtn.classList.remove("speaking");
@@ -347,32 +471,30 @@ function stopRec() {
   listening = false;
 }
 
-micBtn.addEventListener("click", async () => {
-  // tap to start/stop
-  if (!introEl.classList.contains("hidden")) hideIntro();
-
+micBtn?.addEventListener("click", async () => {
+  if (introEl && !introEl.classList.contains("hidden")) hideIntro();
   if (listening) stopRec();
   else startRec();
 });
 
-imgInput.addEventListener("change", async (e) => {
+imgInput?.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = async () => {
     const dataUrl = String(reader.result || "");
-    appendMsg("user", "ส่งรูปหน้างานให้แตงโมดูค่ะ");
+    appendMsg("user", "อัปโหลดภาพหน้างานแล้ว");
 
     try {
-      micBtn.classList.add("speaking");
-      const reply = await callChat("ช่วยดูรูปหน้างานนี้ให้หน่อยค่ะ", dataUrl);
+      micBtn?.classList.add("processing");
+      const reply = await callChat("ช่วยวิเคราะห์ภาพหน้างานนี้ และแนะนำวัสดุ/โทนสีให้หน่อย", dataUrl);
       appendMsg("assistant", reply);
-      if (ttsToggle.checked && reply) await callTTS(reply);
+      if ((ttsToggle?.checked ?? true) && reply) await callTTS(reply);
     } catch (err) {
       toastOnce(err.message || String(err));
     } finally {
-      micBtn.classList.remove("speaking");
+      micBtn?.classList.remove("processing");
     }
   };
   reader.readAsDataURL(file);

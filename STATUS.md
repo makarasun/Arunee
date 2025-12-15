@@ -1,81 +1,71 @@
-# PROJECT STATUS — ARUNEE
+# PROJECT STATUS - ARUNEE
 
-เอกสารนี้ใช้สำหรับ “ซิงก์สถานะงานล่าสุด”
-เพื่อให้การทำงานร่วมกับ ChatGPT ต่อเนื่อง ไม่ทำซ้ำ และไม่แตะของที่โอเคแล้ว
-
-> ใช้คู่กับ WORKFLOW.md  
-> ถ้าข้อมูลในแชทกับไฟล์นี้ขัดกัน ให้ยึดไฟล์นี้เป็นสถานะจริงล่าสุด
+Source of truth for the current work; keep in ASCII to avoid font issues.
 
 ---
 
 ## LAST UPDATED
-- Date: 2025-12-14
-- Updated by: Owner (Makara)
+- Date: 2025-12-16
+- Updated by: Codex
 
 ---
 
-## CURRENT STATUS (Source of Truth)
-
-### ✅ สิ่งที่ทำเสร็จแล้ว
+## CURRENT STATUS
 - Tangmo AI:
-  - เชื่อม OpenAI API + TTS สำเร็จ
-  - เสียงผู้หญิง ใช้งานได้จริง
-  - ตอบสนองเร็วขึ้น
-  - มี system prompt ชัดเจน (พนักงานร้าน / ไม่รุก / ไม่ถามข้อมูล)
-- Deployment:
-  - Repo เชื่อม GitHub
-  - Vercel auto-deploy ทำงานปกติ
-- Workflow:
-  - ใช้ WORKFLOW.md เป็นกติกาหลัก
-  - เปิดแชทด้วย Template “LOAD WORKFLOW: ARUNEE”
+  - Uses OpenAI API + TTS; intro voice lines now mention “ร้านอรุณี ผ้าม่าน” เป็นบริการตกแต่งครบวงจร
+  - Mic button uses `/assets/mic.png`, red glowing when listening/speaking/processing
+  - Chat board toggles under AI bar via the switch; background uses `/assets/talking-frame.png`
+- Carousel:
+  - 6 cards in a 3D ring; swipe/drag/wheel with momentum; tap pops card and scrolls viewer
+  - Card preview windows show seeded media per service
+  - Files: `css/carousel.circular.css`, `js/carousel.circular.js`, `style.css`, `script.js`
+- Media mapping (seed, auto-discovery still works):
+  - curtain -> `/assets/gallery/curtain/curtain-bg1.jpg`
+  - wall -> `/assets/gallery/wall/wall-BG1.jpg`
+  - floor -> `/assets/gallery/floor/floor-BG1.jpg`
+  - install -> `/assets/gallery/install/install-BG1.jpg`
+  - aftercare -> `/assets/gallery/aftercare/aftercar-BG1.jpg`
+  - design -> `/assets/gallery/design/sample-1.jpg`
+  - Additional media picked up via `sample-*` / `sample-*-thumb` / `vsample-*` / `vsample-*-thumb`
+- Viewer:
+  - Image/video, fullscreen, thumbnail strip per service
+- Data: all service text and greetings are hardcoded in `script.js` for now; no inventory/stock source yet
 
 ---
 
-### 🔧 กำลังทำอยู่ (In Progress)
-- Carousel Cards (Neumorphic):
-  - รูปแบบ: Vertical cards
-  - จำนวน: 6 ใบ
-  - Interaction: Swipe/drag เท่านั้น (no auto-rotate)
-  - ปัญหาปัจจุบัน:
-    - BG ของ carousel ยังไม่ transparent ตามต้องการ
-    - การ์ดยังไม่ชิดเป็น “วงกลม” อย่างชัดเจน
-  - ไฟล์ที่เกี่ยวข้อง:
-    - `css/carousel.circular.css`
-    - `js/carousel.circular.js`
-  - **ห้ามแตะ**:
-    - `style.css`
-    - `script.js`
+## IN PROGRESS
+- Align card preview content visibility through glass window (depends on transparency of card art)
+- Plan inventory/tones ingestion (Excel/JSON) pending customer decision
+- Thai copy finalization (awaiting customer-provided wording)
 
 ---
 
-### ❗ สิ่งที่ห้ามแตะ / Locked
-- Tangmo core logic ใน `script.js`
-- Layout หลักของหน้าเว็บที่ทำงานได้แล้ว
-- Section ที่ไม่เกี่ยวกับ carousel
+## LOCKED
+- Tangmo core logic outside carousel scope (unless explicitly requested)
+- Overall page layout outside carousel/AI/chat sections
 
 ---
 
-### 🎯 เป้าหมายถัดไป (Next Goals)
-1) Carousel:
-   - BG โปร่งใส 100%
-   - ไม่มีกรอบ / ไม่มีพื้นหลังแฝง
-   - การ์ดเรียงชิดเป็นวงกลม ดูเป็น carousel ชัดเจนบนมือถือ
-2) หลัง carousel เสถียร:
-   - Sync การ์ดกับจอแสดงผลงานด้านล่าง
-   - ปรับ animation ให้เนียนแบบ landing page
+## NEXT GOALS
+1) Inventory/tones:
+   - Decide source (single Excel vs JSON) and implement loader + mapping to services/tones
+2) Media:
+   - Confirm final seed media per service; adjust preview if card art needs transparency tweaks
+3) Copy:
+   - Replace placeholder Thai text with approved client copy once received
 
 ---
 
 ## NOTES / DECISIONS
-- Default code delivery = replace whole file
-- ยกเว้นกรณี “จูนตัวเลข” จะชี้เฉพาะบรรทัด
-- ถ้าจะเพิ่มฟีเจอร์ใหม่ → แยกไฟล์เสมอ
-- ChatGPT ต้องขออนุมัติก่อนเขียนโค้ดทุกครั้ง
+- Default delivery = replace whole file
+- Mic icon path: `/assets/mic.png`
+- Chat board frame: `/assets/talking-frame.png`
+- Media seeds listed above; auto-discovery keeps working if files follow naming pattern
 
 ---
 
-## HOW TO USE (สำคัญ)
-- ทุกครั้งที่เริ่มแชทใหม่:
-  - paste Template เปิดแชท
-  - ถ้ามีการเปลี่ยนสถานะ → อัปเดตไฟล์นี้ใน repo
-- ChatGPT ต้องยึดไฟล์นี้เป็นสถานะล่าสุดของงาน
+## HOW TO USE
+- Update greeting lines: `script.js` → `sayOpeningOnce()` array `lines`
+- Update service titles/descriptions: `script.js` → `SERVICES` object
+- Add media: drop files into corresponding `assets/gallery/<service>/` with names `sample-1.jpg` / `sample-1-thumb.jpg` / `vsample-1.mp4` / `vsample-1-thumb.jpg` (or overwrite the seeded BG files)
+- Inventory integration: not implemented; choose source format (Excel/JSON) then add loader
