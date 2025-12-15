@@ -63,7 +63,7 @@
       const x = Math.sin(t) * RADIUS;
       const z = -Math.cos(t) * DEPTH;
 
-      const frontness = (Math.cos(t) + 1) / 2; // 0..1
+      const frontness = (1 - Math.cos(t)) / 2; // 0..1 (1 = front)
 
       // scale / blur / opacity
       const scale = 0.72 + frontness * 0.36;         // 0.72..1.08
@@ -159,4 +159,5 @@
   // Start loop (still/no auto rotate because targetAngle stays 0 until user drags)
   startRenderLoop();
 })();
+
 
