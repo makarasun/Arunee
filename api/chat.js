@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         assistant_id: ASSISTANT_ID,
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
         input,
         max_output_tokens: 520,
         temperature: 0.7,
