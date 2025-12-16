@@ -89,7 +89,18 @@ export default async function handler(req, res) {
       return json(res, r.status, { error: data?.error || data });
     }
 
-    const text = (data?.output_text || "").trim();
+    const text =
+      (data?.output_text || "").trim() ||
+      (data?.output ?? [])
+        .map(o => (o?.content ?? []).map(c => c?.text || "").join(""))
+        .join("")
+        .trim() ||
+      (data?.content?.[0]?.text || "").trim();
+
+    if (!text) {
+      return json(res, 500, { error: data?.error || "empty response from OpenAI" });
+    }
+
     return json(res, 200, { text });
   } catch (e) {
     return json(res, 500, { error: String(e?.message || e) });
