@@ -1,7 +1,8 @@
 export const config = { runtime: "nodejs" };
 
-// ใช้ Assistant ID จาก env หรือค่าที่ให้มา
-const ASSISTANT_ID = process.env.OPENAI_ASSISTANT_ID || "asst_mJUHv4jgkoQFbKigrEovVf9q";
+const ASSISTANT_PROMPT =
+  process.env.OPENAI_ASSISTANT_PROMPT ||
+  `You are Tangmo, an assistant for "Arunee Curtains", a shop offering comprehensive interior design services (curtains, walls, floors, design, install, aftercare). Be concise, friendly, and give practical suggestions. Respond in Thai unless user uses another language. If an image is provided, describe and give recommendations relevant to the service.`;
 
 function cleanKey(raw) {
   return String(raw || "")
@@ -25,11 +26,8 @@ export default async function handler(req, res) {
   const apiKey = cleanKey(process.env.OPENAI_API_KEY);
   if (!apiKey || !apiKey.startsWith("sk-")) {
     return json(res, 500, {
-      error: "OPENAI_API_KEY missing/invalid (remove quotes/backslashes and paste raw key)"
+      error: "OPENAI_API_KEY missing/invalid (paste raw key, no quotes/backslashes)"
     });
-  }
-  if (!ASSISTANT_ID) {
-    return json(res, 500, { error: "OPENAI_ASSISTANT_ID missing" });
   }
 
   try {
@@ -37,8 +35,9 @@ export default async function handler(req, res) {
     const messages = Array.isArray(body?.messages) ? body.messages : [];
     const imageDataUrl = body?.image || null;
 
-    const input = [];
+    const input = [{ role: "system", content: ASSISTANT_PROMPT }];
     messages.forEach((m) => input.push({ role: m.role, content: m.content }));
+
     if (imageDataUrl) {
       input.push({
         role: "user",
@@ -54,10 +53,8 @@ export default async function handler(req, res) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "OpenAI-Beta": "assistants=v2",
       },
       body: JSON.stringify({
-        assistant_id: ASSISTANT_ID,
         model: process.env.OPENAI_MODEL || "gpt-4o-mini",
         input,
         max_output_tokens: 520,
