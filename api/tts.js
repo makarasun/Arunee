@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   const apiKey = cleanKey(process.env.OPENAI_API_KEY);
   if (!apiKey || !apiKey.startsWith("sk-")) {
-    return json(res, 500, { error: "OPENAI_API_KEY ไม่ถูกต้อง (มี \\ หรือ \" ปน) — ให้ paste แบบ raw" });
+    return json(res, 500, { error: "OPENAI_API_KEY missing (paste raw key)" });
   }
 
   try {
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     const text = String(body?.text || "").trim();
     if (!text) return json(res, 400, { error: "Missing text" });
 
-    const voice = process.env.OPENAI_TTS_VOICE || "nova"; // << ปรับตรงนี้ได้ (nova/alloy/...)
+    const voice = process.env.OPENAI_TTS_VOICE || "alloy"; // fixed voice for stability
     const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 
     const r = await fetch("https://api.openai.com/v1/audio/speech", {
