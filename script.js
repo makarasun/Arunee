@@ -1,5 +1,5 @@
 /* =========================================================
-   Tangmo Neumo v3 (carousel + media viewer + voice + chat)
+   Tangmo Neumo v3 (carousel + media viewer + voice + chat + memory)
 ========================================================= */
 
 const $ = (q) => document.querySelector(q);
@@ -8,7 +8,7 @@ const introEl = $("#intro");
 const introSkip = $("#intro-skip");
 
 const micBtn = $("#micBtn");
-const ttsToggle = $("#ttsToggle"); // ใช้เป็นสวิตช์เปิด/ปิด chat board
+const ttsToggle = $("#ttsToggle"); // ใช้เป็นสวิตช์เปิด/ปิด chat dock
 const imgInput = $("#imgInput");
 
 const bgImg = $("#bg-image");
@@ -33,32 +33,32 @@ const chatLog = $("#chatLog");
 const SERVICES = {
   curtain: {
     title: "งานผ้าม่าน",
-    desc: "ผ้าม่านและผ้าเลเยอร์ เลือกผ้า โทน และแพทเทิร์นตาม mood",
+    desc: "ผ้าม่านเลเยอร์ ผ้าม่านปรับแสง เลือกผ้า/โทน/สไตล์ตาม mood",
     folder: "/assets/gallery/curtain"
   },
   wall: {
     title: "งานผนัง / วอลล์",
-    desc: "วอลล์เปเปอร์ ผนังตกแต่ง และพื้นผิวที่เข้ากับพื้นที่ใช้งาน",
+    desc: "วอลล์เปเปอร์ ผนังตกแต่ง ผิวสัมผัสที่เข้ากับพื้นที่",
     folder: "/assets/gallery/wall"
   },
   design: {
     title: "งานออกแบบ",
-    desc: "งานออกแบบ moodboard / concept / visualization",
+    desc: "ออกแบบ moodboard / concept / visualization ห้องหรือมุมโปรด",
     folder: "/assets/gallery/design"
   },
   floor: {
     title: "งานพื้น",
-    desc: "วัสดุปูพื้นหลายชนิด เลือกลายและสัมผัสที่เหมาะกับสไตล์",
+    desc: "วัสดุปูพื้นหลายชนิด ลายและสัมผัสเหมาะกับสไตล์",
     folder: "/assets/gallery/floor"
   },
   install: {
     title: "งานติดตั้ง",
-    desc: "ก่อน-ระหว่าง-หลังการติดตั้ง ขั้นตอนควบคุมคุณภาพ",
+    desc: "ก่อน-ระหว่าง-หลังการติดตั้ง ควบคุมคุณภาพครบขั้นตอน",
     folder: "/assets/gallery/install"
   },
   aftercare: {
-    title: "งานหลังการขาย",
-    desc: "บริการหลังติดตั้งและการดูแลรักษา",
+    title: "งานบริการหลังการขาย",
+    desc: "ดูแลหลังติดตั้ง ซ่อมแซม ตรวจเช็ก บำรุงรักษา",
     folder: "/assets/gallery/aftercare"
   }
 };
@@ -99,6 +99,72 @@ function toastOnce(msg) {
 }
 
 // -------------------------------------------------------
+// Memory (long/short)
+// -------------------------------------------------------
+const MEMORY_KEY = "tangmo_memory_v1";
+let memory = {
+  long: { name: null, topics: [] },
+  short: [] // { text, ts, expires }
+};
+
+function loadMemory() {
+  try {
+    const raw = localStorage.getItem(MEMORY_KEY);
+    if (raw) memory = JSON.parse(raw);
+  } catch {}
+  pruneShortMemory();
+}
+
+function saveMemory() {
+  try {
+    localStorage.setItem(MEMORY_KEY, JSON.stringify(memory));
+  } catch {}
+}
+
+function pruneShortMemory() {
+  const now = Date.now();
+  memory.short = (memory.short || []).filter((m) => m.expires > now);
+}
+
+function addShortMemory(text) {
+  pruneShortMemory();
+  memory.short.push({ text, ts: Date.now(), expires: Date.now() + 2 * 60 * 60 * 1000 });
+  saveMemory();
+}
+
+function addTopic(topic) {
+  if (!topic) return;
+  const set = new Set(memory.long.topics || []);
+  set.add(topic);
+  memory.long.topics = Array.from(set).slice(-10);
+  saveMemory();
+}
+
+function detectName(text) {
+  const m = String(text || "").match(/ชื่อ\s*([^\s]+)/);
+  if (m && m[1]) {
+    memory.long.name = m[1];
+    saveMemory();
+  }
+}
+
+function buildMemorySummary() {
+  pruneShortMemory();
+  const name = memory.long.name ? `ชื่อลูกค้า: ${memory.long.name}` : "";
+  const topics = (memory.long.topics || []).length
+    ? `หัวข้อที่เคยคุย: ${memory.long.topics.join(", ")}`
+    : "";
+  const shortNotes = (memory.short || []).length
+    ? `บันทึกชั่วคราว: ${memory.short.map((m) => m.text).join(" | ")}`
+    : "";
+  const parts = [name, topics, shortNotes].filter(Boolean);
+  if (!parts.length) return "";
+  return `บริบทที่จำได้: ${parts.join(" | ")}`;
+}
+
+loadMemory();
+
+// -------------------------------------------------------
 // Intro
 // -------------------------------------------------------
 function hideIntro() {
@@ -118,7 +184,7 @@ async function headOK(url) {
   try {
     const res = await fetch(url, { method: "HEAD" });
     return res.ok;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -162,7 +228,6 @@ async function ensureMedia(key) {
   if (!cfg) return [];
 
   const seed = KNOWN_MEDIA[key] ? [...KNOWN_MEDIA[key]] : [];
-  // fallback auto-discovery
   const autos = await discoverPattern(cfg.folder, "sample", false);
   const autosV = await discoverPattern(cfg.folder, "vsample", true);
 
@@ -210,6 +275,7 @@ function renderThumbs(list) {
       b.classList.add("active");
       showMedia(item);
       setBackground(item.src);
+      addShortMemory(`ลูกค้าดูสื่อ: ${item.src}`);
     });
     if (idx === 0) b.classList.add("active");
     thumbsEl.appendChild(b);
@@ -242,7 +308,7 @@ function ensureCardPreview(key, mediaList) {
   }
 }
 
-function seedCardPreviewsFromSeeds(){
+function seedCardPreviewsFromSeeds() {
   cards.forEach((c) => {
     const key = c.dataset.key;
     const list = KNOWN_MEDIA[key];
@@ -255,6 +321,8 @@ async function selectService(key, opts = {}) {
   selectedKey = key;
   viewerTitle.textContent = cfg.title;
   viewerDesc.textContent = cfg.desc;
+
+  addTopic(cfg.title);
 
   const media = await ensureMedia(key);
   const first = media[0];
@@ -274,11 +342,11 @@ async function selectService(key, opts = {}) {
 async function enterFullscreen() {
   if (!viewer) return;
   if (document.fullscreenElement) return;
-  try { await viewer.requestFullscreen(); } catch (e) {}
+  try { await viewer.requestFullscreen(); } catch {}
 }
 async function exitFullscreen() {
   if (!document.fullscreenElement) return;
-  try { await document.exitFullscreen(); } catch (e) {}
+  try { await document.exitFullscreen(); } catch {}
 }
 function toggleFullscreen() {
   if (document.fullscreenElement) exitFullscreen();
@@ -338,18 +406,30 @@ selectService(selectedKey);
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
 let listening = false;
-let lastErrorToastAt = 0;
 let lastOpeningSpoken = false;
+let micRestartTimer = 0;
 
-function appendMsg(role, text) {
+function appendMsg(role, text, attachment) {
   if (!chatLog) return;
   const d = document.createElement("div");
   d.className = `msg ${role === "user" ? "u" : "a"}`;
-  d.textContent = text;
+  if (attachment) {
+    d.innerHTML = `<div class="msg-text">${text || ""}</div>`;
+    if (attachment.type === "image") {
+      const img = document.createElement("img");
+      img.src = attachment.src;
+      img.alt = attachment.alt || "";
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "12px";
+      img.style.marginTop = "8px";
+      d.appendChild(img);
+    }
+  } else {
+    d.textContent = text;
+  }
   chatLog.appendChild(d);
   chatLog.scrollTop = chatLog.scrollHeight;
 
-  // เปิด chat board อัตโนมัติ
   if (ttsToggle) {
     ttsToggle.checked = true;
     toggleChatBoard(true);
@@ -357,8 +437,16 @@ function appendMsg(role, text) {
 }
 
 async function callChat(userText, imageDataUrl = null) {
+  detectName(userText);
+  addShortMemory(`ลูกค้าถาม: ${userText}`);
+
+  const memorySummary = buildMemorySummary();
+  const payloadMessages = [];
+  if (memorySummary) payloadMessages.push({ role: "system", content: memorySummary });
+  payloadMessages.push({ role: "user", content: userText });
+
   const payload = {
-    messages: [{ role: "user", content: userText }],
+    messages: payloadMessages,
     image: imageDataUrl || null
   };
 
@@ -398,11 +486,11 @@ async function sayOpeningOnce() {
   lastOpeningSpoken = true;
 
   const lines = [
-    "ยินดีต้อนรับสู่ร้านอรุณี ผ้าม่าน เรามีบริการตกแต่งภายในครบวงจร ตั้งแต่ผ้าม่าน วอลล์ เปเปอร์ พื้น งานออกแบบ และติดตั้ง",
-    "ที่ร้านอรุณี ผ้าม่าน แต่เราไม่ได้มีแค่ผ้าม่านนะคะ เราดูแลงานผนัง พื้น และการออกแบบทั้งหมด แบบครบวงจรค่ะ เลือกการ์ดบริการที่สนใจได้เลยค่ะ",
-    "ถ้าต้องการคุยไอเดียตกแต่งครบชุด ที่เดียวจบ ครบทุกบริการ ที่ร้านอรุณี ผ้าม่าน กดปุ่มไมค์แล้วเล่าโจทย์ได้เลยค่ะ",
-    "อยากรู้ตัวอย่างงานผ้าม่าน วอลล์ เปเปอร์ หรือบริการติดตั้งทั้งหมด เลือกการ์ด แล้วแตงโม จะเล่าให้ฟังนะคะ",
-    "มีรูปหน้างานหรืออยากเห็นงานตกแต่งครบวงจร ส่งรูปขึ้นมาได้เลย แตงโม Ai จากร้านอรุณี ผ้าม่านจะช่วยแนะนำค่ะ"
+    "ยินดีต้อนรับสู่ร้านอรุณี ผ้าม่าน แตงโมช่วยดูงานผ้าม่าน ผนัง พื้น ออกแบบ และติดตั้งได้ครบค่ะ",
+    "แตงโมอยู่ที่นี่เพื่อช่วยเลือกผ้าม่าน วอลล์ พื้น หรือดีไซน์ทั้งห้อง บอกโจทย์มาได้เลยค่ะ",
+    "อยากดูโทนสี หรือขอคำแนะนำติดตั้ง แตงโมช่วยเล่าและเลือกตัวอย่างให้ได้ทันทีค่ะ",
+    "ส่งรูปหน้างานมาได้เลย แตงโมจะช่วยวิเคราะห์และแนะนำวัสดุที่เหมาะกับร้านอรุณี ผ้าม่านค่ะ",
+    "คุยกับแตงโมได้ทั้งเรื่องผ้าม่าน วอลล์ พื้น หรือบริการติดตั้ง-หลังการขาย บอกสิ่งที่ต้องการได้เลยค่ะ"
   ];
   const pick = lines[Math.floor(Math.random() * lines.length)];
 
@@ -421,11 +509,14 @@ function startRec() {
   if (!rec) {
     rec = new SpeechRecognition();
     rec.lang = "th-TH";
-    rec.interimResults = false;
+    rec.interimResults = true;
+    rec.continuous = true;
     rec.maxAlternatives = 1;
 
     rec.onresult = async (ev) => {
-      const text = ev.results?.[0]?.[0]?.transcript?.trim();
+      const result = ev.results?.[ev.results.length - 1];
+      if (!result?.isFinal) return;
+      const text = result[0]?.transcript?.trim();
       if (!text) return;
 
       appendMsg("user", text);
@@ -444,6 +535,7 @@ function startRec() {
         toastOnce(e.message || String(e));
       } finally {
         micBtn.classList.remove("speaking");
+        micBtn.classList.add("listening");
       }
     };
 
@@ -455,20 +547,25 @@ function startRec() {
 
     rec.onend = () => {
       micBtn.classList.remove("listening");
-      listening = false;
+      if (listening) {
+        clearTimeout(micRestartTimer);
+        micRestartTimer = setTimeout(() => {
+          try { rec.start(); } catch {}
+        }, 300);
+      }
     };
   }
 
   listening = true;
   micBtn.classList.add("listening");
-  rec.start();
+  try { rec.start(); } catch {}
 }
 
 function stopRec() {
+  listening = false;
   if (!rec) return;
   try { rec.stop(); } catch {}
   micBtn.classList.remove("listening");
-  listening = false;
 }
 
 micBtn?.addEventListener("click", async () => {
@@ -484,7 +581,8 @@ imgInput?.addEventListener("change", async (e) => {
   const reader = new FileReader();
   reader.onload = async () => {
     const dataUrl = String(reader.result || "");
-    appendMsg("user", "อัปโหลดภาพหน้างานแล้ว");
+    appendMsg("user", "อัปโหลดภาพหน้างานแล้ว", { type: "image", src: dataUrl });
+    addShortMemory("ลูกค้าอัปโหลดภาพหน้างาน");
 
     try {
       micBtn?.classList.add("processing");
