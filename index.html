@@ -30,17 +30,21 @@
   <header class="top">
     <div class="top-inner">
       <div class="tangmo-dock">
-        <button id="micBtn" class="mic" type="button" aria-label="พูดคุยกับ Tangmo">
+        <button id="micBtn" class="mic" type="button" aria-label="พูดคุยกับน้องม่าน">
           <span class="mic-core"></span>
         </button>
 
         <div class="tangmo-meta">
-          <div class="tangmo-name">Tangmo</div>
-      <div class="tangmo-sub">ผู้ช่วยงานหน้าร้าน (เสียงผู้หญิง)</div>
+          <div class="tangmo-name">น้องม่าน</div>
+          <div class="tangmo-sub">ผู้ช่วยงานหน้าร้าน (เสียงผู้หญิง)</div>
         </div>
 
+        <section class="chat chat-dock hidden" id="chat" aria-live="polite">
+          <div id="chatLog" class="chatlog"></div>
+        </section>
+
         <div class="dock-actions">
-          <label class="switch">
+          <label class="switch" title="เปิด/ปิดบอร์ดแชต">
             <input id="ttsToggle" type="checkbox" checked />
             <span class="slider"></span>
           </label>
@@ -53,11 +57,6 @@
       </div>
 
       <div class="hint">แตะปุ่มไมค์เพื่อคุย หรืออัปโหลดภาพเพื่อขอคำแนะนำ</div>
-
-      <!-- Chat dock -->
-      <section class="chat chat-dock hidden" id="chat" aria-live="polite">
-        <div id="chatLog" class="chatlog"></div>
-      </section>
     </div>
   </header>
 

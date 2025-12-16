@@ -52,7 +52,7 @@ body{overflow-x:hidden}
 .top{position:sticky;top:0;z-index:10;padding:14px 14px 8px;background:linear-gradient(180deg, rgba(238,241,245,.92), rgba(238,241,245,.45));backdrop-filter:blur(12px)}
 .top-inner{max-width:980px;margin:0 auto}
 .tangmo-dock{
-  display:flex;align-items:center;gap:12px;
+  display:flex;align-items:flex-start;gap:12px;
   padding:12px 14px;border-radius:28px;
   background:var(--bg2);border:1px solid var(--stroke);
   box-shadow:14px 14px 40px var(--shadow-dark), -14px -14px 40px var(--shadow-light)
@@ -96,6 +96,31 @@ body{overflow-x:hidden}
 .dock-actions{display:flex;align-items:center;gap:10px}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center}
 
+.chat-dock{
+  flex:2;
+  min-width:0;
+  transition:max-height .35s ease, opacity .35s ease, padding .35s ease;
+  max-height:0;
+  opacity:0;
+  overflow:hidden;
+  padding:0;
+}
+.chat-dock.show{
+  max-height:220px;
+  opacity:1;
+  padding:4px 0 0;
+}
+.chatlog{
+  border-radius:18px;
+  padding:12px;
+  background:#fff url("/assets/talking-frame.png") center/cover no-repeat;
+  border:1px solid var(--stroke);
+  box-shadow:inset 6px 6px 14px rgba(15,23,42,.06), inset -6px -6px 14px rgba(255,255,255,.85);
+  min-height:80px;
+  max-height:200px;
+  overflow:auto;
+  transition:max-height .3s ease, opacity .3s ease;
+}
 .chat-dock{
   margin-top:10px;
   transition:max-height .35s ease, opacity .35s ease;
@@ -212,16 +237,6 @@ body{overflow-x:hidden}
 
 /* chat (hidden for now) */
 .hidden{display:none}
-.chatlog{
-  border-radius:22px;padding:16px;
-  background: #fff url("/assets/talking-frame.png") center/cover no-repeat;
-  border:1px solid var(--stroke);
-  box-shadow:14px 14px 40px var(--shadow-dark), -14px -14px 40px var(--shadow-light);
-  min-height:160px;
-  max-height:320px;
-  overflow:auto;
-  transition:max-height .3s ease, opacity .3s ease;
-}
 .msg{padding:10px 12px;border-radius:16px;margin:8px 0;max-width:92%}
 .msg.u{background:rgba(96,165,250,.12);margin-left:auto}
 .msg.a{background:rgba(251,113,133,.10)}
