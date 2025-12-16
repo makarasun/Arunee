@@ -19,6 +19,7 @@ Source of truth for the current work; keep in ASCII to avoid font issues.
   - `api/chat.js` now parses OpenAI `responses` API properly (falls back through output/output_text/content); returns 500 if empty text instead of blank reply
 - Assistant integration:
   - `api/chat.js` now calls Assistants API (`assistant_id` = env `OPENAI_ASSISTANT_ID` or `asst_mJUHv4jgkoQFbKigrEovVf9q`) via `responses` endpoint with `assistants=v2` header
+  - Added explicit model fallback (`OPENAI_MODEL` or `gpt-4o-mini`) to satisfy API requirement
 - Carousel:
   - 6 cards in a 3D ring; swipe/drag/wheel with momentum; tap pops card and scrolls viewer
   - Card preview windows show seeded media per service
