@@ -59,7 +59,7 @@ body{overflow-x:hidden}
 }
 
 .mic{
-  width:99px;height:99px;border-radius:999px;border:0;cursor:pointer;position:relative;
+  width:80px;height:80px;border-radius:999px;border:0;cursor:pointer;position:relative;
   background:var(--bg);
   box-shadow:inset 12px 12px 20px rgba(15,23,42,.12), inset -12px -12px 20px rgba(255,255,255,.92);
   transition:box-shadow .2s ease, filter .2s ease, transform .15s ease;
