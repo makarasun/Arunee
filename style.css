@@ -57,6 +57,9 @@ body{overflow-x:hidden}
   background:var(--bg2);border:1px solid var(--stroke);
   box-shadow:14px 14px 40px var(--shadow-dark), -14px -14px 40px var(--shadow-light)
 }
+.brand-logo{
+  width:72px;height:72px;border-radius:18px;object-fit:contain;
+}
 
 .mic{
   width:86px;height:86px;border-radius:999px;border:0;cursor:pointer;position:relative;
@@ -113,7 +116,7 @@ body{overflow-x:hidden}
 .chatlog{
   border-radius:18px;
   padding:12px;
-  background:#fff url("/assets/talking-frame.png") center/cover no-repeat;
+  background:#fff;
   border:1px solid var(--stroke);
   box-shadow:inset 6px 6px 14px rgba(15,23,42,.06), inset -6px -6px 14px rgba(255,255,255,.85);
   min-height:80px;
