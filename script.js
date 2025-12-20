@@ -23,6 +23,8 @@ const thumbsEl = $("#thumbs");
 
 const ring = $("#ring");
 const cards = Array.from(document.querySelectorAll(".card"));
+const serviceButtons = Array.from(document.querySelectorAll(".service-btn"));
+const serviceAudio = $("#serviceAudio");
 
 const chatSection = $("#chat");
 const chatLog = $("#chatLog");
@@ -60,6 +62,33 @@ const SERVICES = {
     title: "งานบริการหลังการขาย",
     desc: "ดูแลหลังติดตั้ง ซ่อมแซม ตรวจเช็ก บำรุงรักษา",
     folder: "/assets/gallery/aftercare"
+  }
+};
+
+const SERVICE_AUDIO = {
+  curtain: {
+    src: "/assets/audio/service-curtain.mp3",
+    script: "บริการผ้าม่านครบวงจร วัดพื้นที่จริง เลือกผ้าและรางให้เหมาะกับแสงและสไตล์บ้าน ตัดเย็บอย่างประณีต และติดตั้งให้เรียบร้อยสวยงาม."
+  },
+  wall: {
+    src: "/assets/audio/service-wall.mp3",
+    script: "บริการวอลล์เปเปอร์และผนังตกแต่ง ช่วยคัดลายที่เข้ากับบรรยากาศ พื้นผิวเนี๊ยบ ติดตั้งเรียบสนิท เพิ่มมิติให้พื้นที่ใช้งาน."
+  },
+  design: {
+    src: "/assets/audio/service-design.mp3",
+    script: "บริการออกแบบภาพรวมงาน จัดทำคอนเซ็ปต์และ moodboard ให้เห็นทิศทางชัดเจน พร้อมคำแนะนำเรื่องวัสดุและโทนสีที่ลงตัว."
+  },
+  floor: {
+    src: "/assets/audio/service-floor.mp3",
+    script: "บริการงานพื้นทั้งพื้นไม้ ลามิเนต และกระเบื้องยาง เลือกวัสดุให้เหมาะกับการใช้งาน ติดตั้งแน่นหนา เดินสบาย ดูแลง่าย."
+  },
+  install: {
+    src: "/assets/audio/service-install.mp3",
+    script: "บริการติดตั้งโดยทีมช่างมาตรฐาน เข้างานตรงเวลา ทำงานสะอาด เก็บรายละเอียดครบ เพื่อให้ใช้งานได้ยาวนานและปลอดภัย."
+  },
+  aftercare: {
+    src: "/assets/audio/service-aftercare.mp3",
+    script: "บริการดูแลหลังการขาย พร้อมรับประกันงาน ติดตามผลหลังติดตั้ง และช่วยแก้ไขเมื่อมีปัญหา ให้คุณมั่นใจได้ตลอดการใช้งาน."
   }
 };
 
@@ -321,6 +350,7 @@ async function selectService(key, opts = {}) {
   selectedKey = key;
   viewerTitle.textContent = cfg.title;
   viewerDesc.textContent = cfg.desc;
+  setServiceActive(key);
 
   addTopic(cfg.title);
 
@@ -335,6 +365,26 @@ async function selectService(key, opts = {}) {
 
   if (opts.scrollToViewer && viewer) {
     viewer.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function setServiceActive(key) {
+  if (!serviceButtons.length) return;
+  serviceButtons.forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.service === key);
+  });
+}
+
+function playServiceAudio(key) {
+  const cfg = SERVICE_AUDIO[key];
+  if (!cfg || !serviceAudio) return;
+  try {
+    serviceAudio.pause();
+    serviceAudio.currentTime = 0;
+    serviceAudio.src = cfg.src;
+    serviceAudio.play().catch(() => toastOnce("ไม่สามารถเล่นเสียงได้"));
+  } catch (e) {
+    toastOnce(e.message || String(e));
   }
 }
 
@@ -393,6 +443,15 @@ cards.forEach((c) => {
   c.addEventListener("click", () => {
     const key = c.getAttribute("data-key");
     if (key) selectService(key, { scrollToViewer: true });
+  });
+});
+
+serviceButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const key = btn.dataset.service;
+    if (!key) return;
+    selectService(key, { scrollToViewer: false });
+    playServiceAudio(key);
   });
 });
 

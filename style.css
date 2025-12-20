@@ -98,6 +98,31 @@ body{overflow-x:hidden}
 
 .dock-actions{display:flex;align-items:center;gap:10px}
 .hint{margin-top:8px;font-size:12px;color:var(--muted);text-align:center}
+.service-strip{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+@media (max-width:760px){.service-strip{grid-template-columns:repeat(2,1fr)}}
+.service-btn{
+  border:1px solid var(--stroke);
+  border-radius:18px;
+  padding:10px 12px;
+  background:var(--bg2);
+  cursor:pointer;
+  text-align:left;
+  box-shadow:10px 10px 24px rgba(15,23,42,.12), -10px -10px 24px rgba(255,255,255,.9);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  transition:transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.service-btn:hover{transform:translateY(-1px)}
+.service-btn:active{transform:translateY(0)}
+.service-btn.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(251,113,133,.25)}
+.service-name{font-weight:900}
+.service-sub{font-size:11px;color:var(--muted)}
 
 .chat-dock{
   flex:2;
