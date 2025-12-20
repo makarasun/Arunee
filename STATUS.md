@@ -3,7 +3,7 @@
 
 ---
 ## LAST UPDATED
-- Date: 2025-12-16
+- Date: 2025-12-20
 - Updated by: Codex
 
 ---
@@ -30,6 +30,8 @@
   - aftercare -> `/assets/gallery/aftercare/aftercar-BG1.jpg`
   - design -> `/assets/gallery/design/sample-1.jpg`
 - Viewer: image/video, fullscreen, thumbnail strip per service
+- Service buttons: 6-button strip under dock; click selects service + plays audio from `/assets/audio/service-*.mp3`
+- Audio scripts: stored in `script.js` -> `SERVICE_AUDIO.script` for TTS generation
 - Data: inventory/stock not integrated yet
 
 ---
