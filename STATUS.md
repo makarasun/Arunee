@@ -3,15 +3,15 @@
 
 ---
 ## LAST UPDATED
-- Date: 2025-12-20
+- Date: 2568-12-21
 - Updated by: Codex
 
 ---
 ## CURRENT STATUS
 - Tangmo AI:
   - Uses OpenAI API + TTS; intro lines mention “ร้านอรุณี ผ้าม่าน” เป็นบริการตกแต่งครบวงจร
-  - Mic button `/assets/mic.png`, red glow when listening/speaking/processing; TTS voice fixed to `alloy` (env OPENAI_TTS_VOICE override)
-  - Chat dock is in the top bar; toggle by switch; uploads show in chat log
+  - Mic button has red core + logo overlay `/assets/logo.png`, red glow when listening/speaking/processing; TTS voice fixed to `alloy` (env OPENAI_TTS_VOICE override)
+  - Chat dock lives inside top dock; toggle by switch; uploads show in chat log
 - Chat API:
   - `api/chat.js` uses OpenAI responses API with system prompt (env OPENAI_ASSISTANT_PROMPT or default); model = env OPENAI_MODEL or `gpt-4o-mini`
   - Parses output_text/output[].content[].text/content[0].text; returns 500 on empty response
@@ -20,7 +20,8 @@
   - LocalStorage long/short memory: remembers name/topics; short notes expire after 2h; summary sent as system context on each chat
 - Carousel:
   - 6 cards 3D ring; swipe/drag/wheel with momentum; tap pops and scrolls viewer
-  - Card preview windows show seeded media per service
+  - Card preview windows show seeded media per service; card shadow removed; bottom edge masked to prevent line artifacts
+  - External select animates with ease-in/out + motion blur while moving
   - Files: `css/carousel.circular.css`, `js/carousel.circular.js`, `style.css`, `script.js`
 - Media seeds (auto-discovery still works for sample-*/vsample-*):
   - curtain -> `/assets/gallery/curtain/curtain-bg1.jpg`
@@ -30,13 +31,12 @@
   - aftercare -> `/assets/gallery/aftercare/aftercar-BG1.jpg`
   - design -> `/assets/gallery/design/sample-1.jpg`
 - Viewer: image/video, fullscreen, thumbnail strip per service
-- Service buttons: 6-button strip under dock; click selects service + plays audio from `/assets/audio/service-*.mp3`
+- Service buttons: 6-button strip under dock; click selects service + plays audio from `/assets/audio/service-*.mp3`; auto-hide on scroll with heading
 - Audio scripts: stored in `script.js` -> `SERVICE_AUDIO.script` for TTS generation
 - Data: inventory/stock not integrated yet
 
 ---
 ## IN PROGRESS
-- Align card preview visibility (depends on card art transparency)
 - Plan inventory/tones ingestion (Excel/JSON) pending customer decision
 - Thai copy finalization when client provides wording
 
@@ -54,7 +54,7 @@
 ---
 ## NOTES / DECISIONS
 - Default delivery = replace whole file
-- Mic icon path: `/assets/mic.png`
+- Mic overlay path: `/assets/logo.png`
 - Chat frame: `/assets/talking-frame.png`
 - Media seeds listed above; auto-discovery via naming pattern
 
