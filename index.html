@@ -30,20 +30,15 @@
   <header class="top">
     <div class="top-inner">
       <div class="tangmo-dock">
-        <img class="brand-logo" src="/assets/logo.png" alt="โลโก้ ร้านอรุณี ผ้าม่าน" />
-
+        <div class="tangmo-row">
         <button id="micBtn" class="mic" type="button" aria-label="พูดคุยกับน้องม่าน">
           <span class="mic-core"></span>
+          <span class="mic-logo" aria-hidden="true"></span>
         </button>
 
         <div class="tangmo-meta">
           <div class="tangmo-name">น้องม่าน</div>
-          <div class="tangmo-sub">ผู้ช่วยงานหน้าร้าน (เสียงผู้หญิง)</div>
         </div>
-
-        <section class="chat chat-dock hidden" id="chat" aria-live="polite">
-          <div id="chatLog" class="chatlog"></div>
-        </section>
 
         <div class="dock-actions">
           <label class="switch" title="เปิด/ปิดบอร์ดแชต">
@@ -56,9 +51,20 @@
             <span>+</span>
           </label>
         </div>
+
+        </div>
+
+        <section class="chat chat-dock hidden" id="chat" aria-live="polite">
+          <div id="chatLog" class="chatlog"></div>
+        </section>
       </div>
 
       <div class="hint">แตะปุ่มไมค์เพื่อคุย หรืออัปโหลดภาพเพื่อขอคำแนะนำ</div>
+
+      <div class="service-heading">
+        <h2 class="h2">หมวดบริการ</h2>
+        <p class="p">เลือกหัวข้อบริการที่สนใจ แล้วปัดการ์ดเพื่อหมุนดู</p>
+      </div>
 
       <section class="service-strip" aria-label="บริการของร้าน">
         <button class="service-btn" data-service="curtain" type="button">
@@ -93,9 +99,6 @@
   <main class="wrap">
     <!-- Carousel -->
     <section class="section">
-      <h2 class="h2">หมวดบริการ</h2>
-      <p class="p">เลือกหัวข้อบริการที่สนใจ แล้วปัดการ์ดเพื่อหมุนดู</p>
-
       <div class="carousel">
         <div id="ring" class="ring" aria-label="carousel cards">
           <!-- 6 cards (PNG card skins) -->

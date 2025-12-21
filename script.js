@@ -24,6 +24,8 @@ const thumbsEl = $("#thumbs");
 const ring = $("#ring");
 const cards = Array.from(document.querySelectorAll(".card"));
 const serviceButtons = Array.from(document.querySelectorAll(".service-btn"));
+const serviceHeading = $(".service-heading");
+const serviceStrip = $(".service-strip");
 const serviceAudio = $("#serviceAudio");
 
 const chatSection = $("#chat");
@@ -192,6 +194,35 @@ function buildMemorySummary() {
 }
 
 loadMemory();
+
+// -------------------------------------------------------
+// Service strip auto-hide on scroll (swipe up)
+// -------------------------------------------------------
+function setupServiceStripAutoHide() {
+  if (!serviceStrip && !serviceHeading) return;
+  let lastY = window.scrollY || 0;
+  const threshold = 6;
+
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY || 0;
+    const delta = y - lastY;
+    if (Math.abs(delta) < threshold) return;
+
+    if (y <= 10) {
+      serviceStrip?.classList.remove("is-hidden");
+      serviceHeading?.classList.remove("is-hidden");
+    } else if (delta > 0) {
+      serviceStrip?.classList.add("is-hidden");
+      serviceHeading?.classList.add("is-hidden");
+    } else {
+      serviceStrip?.classList.remove("is-hidden");
+      serviceHeading?.classList.remove("is-hidden");
+    }
+    lastY = y;
+  }, { passive: true });
+}
+
+setupServiceStripAutoHide();
 
 // -------------------------------------------------------
 // Intro
@@ -375,6 +406,14 @@ function setServiceActive(key) {
   });
 }
 
+function focusCarouselCard(key) {
+  if (!cards.length) return false;
+  const target = cards.find((c) => c.dataset.key === key);
+  if (!target) return false;
+  window.dispatchEvent(new CustomEvent("carousel:go", { detail: { key, via: "service" } }));
+  return true;
+}
+
 function playServiceAudio(key) {
   const cfg = SERVICE_AUDIO[key];
   if (!cfg || !serviceAudio) return;
@@ -450,7 +489,8 @@ serviceButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.service;
     if (!key) return;
-    selectService(key, { scrollToViewer: false });
+    const moved = focusCarouselCard(key);
+    if (!moved) selectService(key, { scrollToViewer: false });
     playServiceAudio(key);
   });
 });
