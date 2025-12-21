@@ -29,6 +29,7 @@
     raf: 0,
     activeIdx: 0,
     justDragged: false,
+    moving: false,
   };
 
   // ---------------------------
@@ -82,6 +83,12 @@
   // ---------------------------
   const lerp = (a,b,t)=> a+(b-a)*t;
   const clamp01 = (t)=> Math.max(0, Math.min(1, t));
+  const easeInOut = (t)=> t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+
+  function setMoving(on){
+    S.moving = on;
+    ring.classList.toggle("is-moving", on);
+  }
 
   function render(){
     let bestIdx = 0;
@@ -99,7 +106,7 @@
       const isActive = i === S.activeIdx;
 
       let scale = lerp(0.96, 1.09, t);
-      const blur  = lerp(0.5, 0.0, t);
+      const blur  = lerp(0.5, 0.0, t) + (S.moving ? 0.35 : 0);
       const op    = lerp(0.84, 1.0, t);
       if (isActive) scale *= 1.04;
 
@@ -177,6 +184,7 @@
       }
     }
 
+    setMoving(true);
     e.preventDefault?.();
 
     const now = performance.now();
@@ -197,11 +205,13 @@
   }
 
   function spin(){
+    setMoving(true);
     const tick = () => {
       S.vel *= FRICTION;
       if (Math.abs(S.vel) < STOP_EPS){
         S.vel = 0;
         render();
+        setMoving(false);
         return;
       }
       S.angle += S.vel;
@@ -216,6 +226,7 @@
     S.down = false;
 
     if (!S.dragging){
+      setMoving(false);
       return;
     }
 
@@ -226,6 +237,7 @@
 
   function onWheel(e){
     e.preventDefault?.();
+    setMoving(true);
     const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     const da = dxToAngle(delta * 0.7);
     S.angle += da;
@@ -244,6 +256,40 @@
     S.angle += diff;
     S.activeIdx = idx;
     render();
+  }
+
+  function animateToIndex(idx, via){
+    if (idx < 0 || idx >= L.N) return;
+    const target = -idx * L.step;
+    const tau = Math.PI * 2;
+    let diff = (target - S.angle) % tau;
+    if (diff > Math.PI) diff -= tau;
+    if (diff < -Math.PI) diff += tau;
+
+    cancelAnimationFrame(S.raf);
+    S.vel = 0;
+    S.activeIdx = idx;
+    setMoving(true);
+
+    const start = S.angle;
+    const duration = 420;
+    const startT = performance.now();
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - startT) / duration);
+      const eased = easeInOut(t);
+      S.angle = start + diff * eased;
+      render();
+      if (t < 1){
+        S.raf = requestAnimationFrame(tick);
+      } else {
+        S.angle = start + diff;
+        render();
+        setMoving(false);
+        emitSelect(idx, via || "service");
+      }
+    };
+    S.raf = requestAnimationFrame(tick);
   }
 
   function emitSelect(idx, via){
@@ -266,6 +312,14 @@
     emitSelect(idx, "tap");
   }
 
+  function onExternalGo(e){
+    const key = e.detail?.key;
+    if (!key) return;
+    const idx = cards.findIndex((c) => c.getAttribute("data-key") === key);
+    if (idx < 0) return;
+    animateToIndex(idx, e.detail?.via || "service");
+  }
+
   // ---------------------------
   // INIT
   // ---------------------------
@@ -279,6 +333,7 @@
   ring.addEventListener("pointerleave", () => { if (S.down) onUp(); }, { passive: true });
   ring.addEventListener("click", onClick);
   ring.addEventListener("wheel", onWheel, { passive: false });
+  window.addEventListener("carousel:go", onExternalGo);
 
   let to = 0;
   window.addEventListener("resize", () => {
