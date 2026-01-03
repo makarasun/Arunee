@@ -30,6 +30,7 @@ const serviceAudio = $("#serviceAudio");
 
 const chatSection = $("#chat");
 const chatLog = $("#chatLog");
+const AUTOHIDE_SERVICE_STRIP = false;
 
 // ---------------------------
 // Services + media mapping
@@ -199,6 +200,7 @@ loadMemory();
 // Service strip auto-hide on scroll (swipe up)
 // -------------------------------------------------------
 function setupServiceStripAutoHide() {
+  if (!AUTOHIDE_SERVICE_STRIP) return;
   if (!serviceStrip && !serviceHeading) return;
   let lastY = window.scrollY || 0;
   const threshold = 6;
@@ -236,6 +238,17 @@ if (introSkip) introSkip.addEventListener("click", hideIntro);
 if (introEl) introEl.addEventListener("click", (e) => {
   if (e.target === introEl) hideIntro();
 });
+function armOpeningGreeting() {
+  if (armOpeningGreeting.armed) return;
+  armOpeningGreeting.armed = true;
+  const trigger = () => {
+    if (introEl && !introEl.classList.contains("hidden")) hideIntro();
+    else sayOpeningOnce();
+  };
+  window.addEventListener("pointerdown", trigger, { once: true });
+  window.addEventListener("keydown", trigger, { once: true });
+}
+armOpeningGreeting();
 
 // -------------------------------------------------------
 // Media helpers
@@ -585,8 +598,8 @@ async function sayOpeningOnce() {
   lastOpeningSpoken = true;
 
   const lines = [
-    "สวัสดีค่ะ น้องม่านนะคะ ถ้าสงสัยอะไร ถามน้องได้เลยนะคะ หรือกดปุ่มด้านล่าง จะมี [whispers] เสียงลุงแก่ๆจากทีมช่าง [laughs] คอยอธิบายโซนบริการต่างๆ ของร้านอรุณีผ้าม่าน ให้ฟังนะคะ",
-    "ยินดีต้อนรับสู่ร้านอรุณี ผ้าม่าน ชื่อร้านมีคำว่าผ้าม่านแต่บริการครบวงจร ผ้าม่าน ผนัง พื้น ออกแบบ ติดตั้ง และดูแลหลังการขายค่ะ",
+    "สวัสดีค่ะ น้องม่านนะคะ ถ้าสงสัยอะไร ถามน้องได้เลยนะคะ หรือกดปุ่มด้านล่าง  จะมี [whispers] เสียงลุงแก่ๆ  จากทีมช่าง [laughs]  คอยอธิบายโซนบริการต่างๆ  ของร้านอรุณีผ้าม่าน   ให้ฟังนะคะ",
+    "ยินดีต้อนรับสู่ร้าน อรุณีผ้าม่าน ชื่อร้านมีคำว่าผ้าม่านแต่บริการครบวงจร ผ้าม่าน ผนัง พื้น ออกแบบ ติดตั้ง และดูแลหลังการขายค่ะ",
     "น้องม่านช่วยดีไซน์และจัดวัสดุทั้งห้องให้จบที่เดียว ทีมช่างใจดี สายชิลล์ ปรึกษาได้ทุกเรื่องตั้งแต่ผ้าม่าน วอลล์ ไปจนถึงพื้นและงานติดตั้ง",
     "อยากดูโทนสีหรือขอคำแนะนำติดตั้ง น้องม่านช่วยเล่าและเลือกตัวอย่างให้ได้ทันทีค่ะ",
     "ส่งรูปหน้างานมาได้เลย น้องม่านจะช่วยวิเคราะห์และแนะนำวัสดุที่เหมาะ พร้อมส่งต่อให้ทีมช่างได้ค่ะ",
