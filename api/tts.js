@@ -1,5 +1,8 @@
 export const config = { runtime: "nodejs" };
 
+const DEFAULT_VOICE_ID = "6NqqYkRUdfkapV7zND1u";
+const DEFAULT_MODEL_ID = "eleven_v3";
+
 function cleanKey(raw) {
   return String(raw || "")
     .trim()
@@ -19,9 +22,9 @@ export default async function handler(req, res) {
     return json(res, 405, { error: "Method not allowed" });
   }
 
-  const apiKey = cleanKey(process.env.OPENAI_API_KEY);
-  if (!apiKey || !apiKey.startsWith("sk-")) {
-    return json(res, 500, { error: "OPENAI_API_KEY missing (paste raw key)" });
+  const apiKey = cleanKey(process.env.ELEVENLABS_API_KEY);
+  if (!apiKey || !apiKey.startsWith("sk_")) {
+    return json(res, 500, { error: "ELEVENLABS_API_KEY missing (paste raw key)" });
   }
 
   try {
@@ -29,26 +32,33 @@ export default async function handler(req, res) {
     const text = String(body?.text || "").trim();
     if (!text) return json(res, 400, { error: "Missing text" });
 
-    const voice = process.env.OPENAI_TTS_VOICE || "alloy"; // fixed voice for stability
-    const model = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+    const voiceId = cleanKey(process.env.ELEVENLABS_VOICE_ID) || DEFAULT_VOICE_ID;
+    const modelId = process.env.ELEVENLABS_MODEL_ID || DEFAULT_MODEL_ID;
 
-    const r = await fetch("https://api.openai.com/v1/audio/speech", {
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: "POST",
       headers: {
+        Accept: "audio/mpeg",
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "xi-api-key": apiKey,
       },
       body: JSON.stringify({
-        model,
-        voice,
-        format: "mp3",
-        input: text,
+        text,
+        model_id: modelId,
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0,
+          use_speaker_boost: true,
+        },
       }),
     });
 
     if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      return json(res, r.status, { error: err?.error || err });
+      const errText = await r.text().catch(() => "");
+      let errJson = {};
+      try { errJson = JSON.parse(errText); } catch {}
+      return json(res, r.status, { error: errJson?.detail || errJson || errText });
     }
 
     const audio = Buffer.from(await r.arrayBuffer());

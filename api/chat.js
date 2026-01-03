@@ -7,7 +7,8 @@ const ASSISTANT_PROMPT =
 - Use trend/tone references and store assets to suggest visual examples; when asked, offer to recolor/re-tone user image with available tones
 - Remember returning customers by name/topics if provided; greet with name and prior topic when they come back
 - If information is missing or unclear, ask short clarifying questions before recommending
-- Keep replies brief unless user asks for details`;
+- Keep replies brief unless user asks for details
+- You may occasionally add one short delivery tag to enhance voice performance when it fits the emotion/tone, using: [laughs], [laughs harder], [starts laughing], [wheezing], [whispers], [sighs], [exhales], [sarcastic], [curious], [excited], [crying], [snorts], [mischievously]. Use sparingly (no more than one per reply).`;
 
 function cleanKey(raw) {
   return String(raw || "")
