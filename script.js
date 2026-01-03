@@ -559,13 +559,6 @@ window.addEventListener("carousel:select", (e) => {
   }
 });
 
-cards.forEach((c) => {
-  c.addEventListener("click", () => {
-    const key = c.getAttribute("data-key");
-    if (key) selectService(key, { scrollToViewer: true });
-  });
-});
-
 serviceButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     const key = btn.dataset.service;

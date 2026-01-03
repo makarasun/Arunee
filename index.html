@@ -30,18 +30,27 @@
   <header class="top">
     <div class="top-inner">
       <div class="tangmo-dock">
-        <div class="tangmo-row">
-        <div class="tangmo-meta">
-          <div class="tangmo-name">น้องม่าน</div>
-        </div>
+                <div class="tangmo-row">
+          <div class="tangmo-meta">
+            <div class="tangmo-name">น้องม่าน</div>
+          </div>
 
-        <div class="dock-actions">
-          <label class="upload" title="อัปโหลดภาพหน้างาน">
-            <input id="imgInput" type="file" accept="image/*" />
-            <span>+</span>
-          </label>
-        </div>
+          <button id="micBtn" class="mic" type="button" aria-label="?????????????????">
+            <span class="mic-core"></span>
+            <span class="mic-logo" aria-hidden="true"></span>
+          </button>
 
+          <div class="dock-actions">
+            <label class="switch" title="????/???????????">
+              <input id="ttsToggle" type="checkbox" checked />
+              <span class="slider"></span>
+            </label>
+
+            <label class="upload" title="?????????????????">
+              <input id="imgInput" type="file" accept="image/*" />
+              <span>+</span>
+            </label>
+          </div>
         </div>
 
         <section class="chat chat-dock hidden" id="chat" aria-live="polite">
@@ -56,33 +65,7 @@
         <p class="p">เลือกหัวข้อบริการที่สนใจ แล้วปัดการ์ดเพื่อหมุนดู</p>
       </div>
 
-      <section class="service-strip" aria-label="บริการของร้าน">
-        <button class="service-btn" data-service="curtain" type="button">
-          <span class="service-name">ผ้าม่าน</span>
-          <span class="service-sub">วัด-ตัด-ติดตั้ง</span>
-        </button>
-        <button class="service-btn" data-service="wall" type="button">
-          <span class="service-name">วอลล์/ผนัง</span>
-          <span class="service-sub">วอลล์เปเปอร์-ผนังตกแต่ง</span>
-        </button>
-        <button class="service-btn" data-service="design" type="button">
-          <span class="service-name">ออกแบบ</span>
-          <span class="service-sub">คอนเซ็ปต์-ภาพรวมงาน</span>
-        </button>
-        <button class="service-btn" data-service="floor" type="button">
-          <span class="service-name">งานพื้น</span>
-          <span class="service-sub">พื้นไม้/ลามิเนต/กระเบื้องยาง</span>
-        </button>
-        <button class="service-btn" data-service="install" type="button">
-          <span class="service-name">ติดตั้ง</span>
-          <span class="service-sub">ทีมช่างมาตรฐาน</span>
-        </button>
-        <button class="service-btn" data-service="aftercare" type="button">
-          <span class="service-name">ดูแลหลังขาย</span>
-          <span class="service-sub">รับประกัน-ซ่อมบำรุง</span>
-        </button>
-      </section>
-    </div>
+      </div>
   </header>
 
   <!-- Main -->
