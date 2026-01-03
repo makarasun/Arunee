@@ -31,21 +31,11 @@
     <div class="top-inner">
       <div class="tangmo-dock">
         <div class="tangmo-row">
-        <button id="micBtn" class="mic" type="button" aria-label="พูดคุยกับน้องม่าน">
-          <span class="mic-core"></span>
-          <span class="mic-logo" aria-hidden="true"></span>
-        </button>
-
         <div class="tangmo-meta">
           <div class="tangmo-name">น้องม่าน</div>
         </div>
 
         <div class="dock-actions">
-          <label class="switch" title="เปิด/ปิดบอร์ดแชต">
-            <input id="ttsToggle" type="checkbox" checked />
-            <span class="slider"></span>
-          </label>
-
           <label class="upload" title="อัปโหลดภาพหน้างาน">
             <input id="imgInput" type="file" accept="image/*" />
             <span>+</span>
@@ -59,7 +49,7 @@
         </section>
       </div>
 
-      <div class="hint">แตะปุ่มไมค์เพื่อคุย หรืออัปโหลดภาพเพื่อขอคำแนะนำ</div>
+      <div class="hint">แตะการ์ดเพื่อฟังรายละเอียดบริการ</div>
 
       <div class="service-heading">
         <h2 class="h2">หมวดบริการ</h2>
@@ -126,6 +116,7 @@
             <img class="card-art" src="/assets/cards/card-aftercar.png" alt="งานหลังการขาย" />
           </button>
         </div>
+        <div id="cardCaption" class="card-caption" aria-live="polite" aria-atomic="true"></div>
       </div>
 
 

@@ -218,6 +218,7 @@ body{overflow-x:hidden}
 
 /* carousel ring */
 .carousel{
+  position:relative;
   border-radius:28px;padding:18px 14px;
   background:rgba(246,247,251,.78);
   border:1px solid var(--stroke);
@@ -230,6 +231,42 @@ body{overflow-x:hidden}
   transform:translate(-50%,-50%);
   width:160px;height:220px;border:0;cursor:pointer;
   background:transparent
+}
+.card-art{
+  transition:transform .28s var(--ease-io);
+  transform-origin:center center;
+}
+.card.is-speaking .card-art{
+  transform:scale(1.14);
+}
+.card.is-speaking{
+  filter:drop-shadow(0 16px 24px rgba(15,23,42,.28));
+}
+.card-caption{
+  position:absolute;
+  left:50%;
+  bottom:12px;
+  transform:translateX(-50%);
+  width:min(520px,90%);
+  max-width:90%;
+  padding:10px 14px;
+  border-radius:16px;
+  background:rgba(255,255,255,.88);
+  border:1px solid var(--stroke);
+  color:var(--text);
+  font-size:12px;
+  line-height:1.5;
+  text-align:center;
+  box-shadow:10px 10px 24px rgba(15,23,42,.12), -10px -10px 24px rgba(255,255,255,.92);
+  z-index:60;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .2s ease, transform .2s ease;
+  backdrop-filter:blur(6px);
+}
+.card-caption.show{
+  opacity:1;
+  transform:translate(-50%, -4px);
 }
 .card-face{
   width:100%;height:100%;border-radius:28px;

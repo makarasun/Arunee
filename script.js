@@ -27,6 +27,7 @@ const serviceButtons = Array.from(document.querySelectorAll(".service-btn"));
 const serviceHeading = $(".service-heading");
 const serviceStrip = $(".service-strip");
 const serviceAudio = $("#serviceAudio");
+const cardCaption = $("#cardCaption");
 
 const chatSection = $("#chat");
 const chatLog = $("#chatLog");
@@ -427,18 +428,76 @@ function focusCarouselCard(key) {
   return true;
 }
 
-function playServiceAudio(key) {
-  const cfg = SERVICE_AUDIO[key];
-  if (!cfg || !serviceAudio) return;
+let speakingCard = null;
+
+function setCaption(text) {
+  if (!cardCaption) return;
+  cardCaption.textContent = text || "";
+  cardCaption.classList.toggle("show", !!text);
+}
+
+function clearCaption() {
+  if (!cardCaption) return;
+  cardCaption.textContent = "";
+  cardCaption.classList.remove("show");
+}
+
+function setSpeakingCard(card) {
+  if (speakingCard && speakingCard !== card) {
+    speakingCard.classList.remove("is-speaking");
+  }
+  speakingCard = card || null;
+  speakingCard?.classList.add("is-speaking");
+}
+
+function clearSpeakingCard() {
+  if (!speakingCard) return;
+  speakingCard.classList.remove("is-speaking");
+  speakingCard = null;
+}
+
+function stopServiceAudio() {
+  if (!serviceAudio) return;
   try {
     serviceAudio.pause();
     serviceAudio.currentTime = 0;
+  } catch {}
+}
+
+function playServiceAudio(key, card) {
+  const cfg = SERVICE_AUDIO[key];
+  if (!cfg || !serviceAudio) return;
+  try {
+    stopServiceAudio();
+    clearSpeakingCard();
+    setCaption(cfg.script);
+    setSpeakingCard(card);
+    serviceAudio.pause();
+    serviceAudio.currentTime = 0;
     serviceAudio.src = cfg.src;
-    serviceAudio.play().catch(() => toastOnce("ไม่สามารถเล่นเสียงได้"));
+    serviceAudio.play().catch(() => {
+      clearSpeakingCard();
+      clearCaption();
+      toastOnce("ไม่สามารถเล่นเสียงได้");
+    });
   } catch (e) {
+    clearSpeakingCard();
+    clearCaption();
     toastOnce(e.message || String(e));
   }
 }
+
+if (serviceAudio) {
+  serviceAudio.addEventListener("ended", () => {
+    clearSpeakingCard();
+    clearCaption();
+  });
+  serviceAudio.addEventListener("error", () => {
+    clearSpeakingCard();
+    clearCaption();
+  });
+}
+
 
 // Fullscreen toggles
 async function enterFullscreen() {
@@ -488,7 +547,16 @@ setupOrientationFullscreen();
 window.addEventListener("carousel:select", (e) => {
   const key = e.detail?.key;
   if (!key) return;
-  selectService(key, { scrollToViewer: e.detail?.via === "tap" });
+  const via = e.detail?.via;
+  selectService(key, { scrollToViewer: via === "tap" });
+  const cardEl = cards.find((c) => c.dataset.key === key);
+  if (via === "tap") {
+    playServiceAudio(key, cardEl);
+  } else {
+    stopServiceAudio();
+    clearSpeakingCard();
+    clearCaption();
+  }
 });
 
 cards.forEach((c) => {
@@ -504,7 +572,9 @@ serviceButtons.forEach((btn) => {
     if (!key) return;
     const moved = focusCarouselCard(key);
     if (!moved) selectService(key, { scrollToViewer: false });
-    playServiceAudio(key);
+    stopServiceAudio();
+    clearSpeakingCard();
+    clearCaption();
   });
 });
 
